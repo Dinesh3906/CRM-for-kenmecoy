@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        body { display: flex; align-items: center; justify-content: center; height: 100vh; background: #f5f6fa; }
+        .admin-login-box { background: #fff; padding: 40px 30px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); width: 350px; }
+        .admin-login-box h2 { text-align: center; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+        .form-group input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; }
+        .btn { width: 100%; padding: 12px; background: #667eea; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .error { color: #e74c3c; text-align: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="admin-login-box">
+        <h2>Admin Login</h2>
+        <% if (error) { %>
+            <div class="error"><%= error %></div>
+        <% } %>
+        <form method="POST" action="/admin/login">
+            <div class="form-group">
+                <label for="adminId">Admin ID</label>
+                <input type="text" id="adminId" name="adminId" required placeholder="admin">
+            </div>
+            <div class="form-group">
+                <label for="adminPass">Password</label>
+                <input type="password" id="adminPass" name="adminPass" required placeholder="admin123">
+            </div>
+            <button class="btn" type="submit">Login</button>
+        </form>
+    </div>
+</body>
+</html> 

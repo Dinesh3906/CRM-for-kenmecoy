@@ -1,0 +1,1646 @@
+// Global variables
+let leads = [];
+let draggedElement = null;
+let dragAndDropInitialized = false;
+let currentPipeline = null;
+let editingColumnIndex = -1;
+
+// Multiple Contact Management Functions
+let emailCount = 1;
+let phoneCount = 1;
+let editEmailCount = 1;
+let editPhoneCount = 1;
+
+// API Base URL
+const API_BASE_URL = '/api/leads';
+const PIPELINE_API_URL = '/api/pipeline';
+
+// --- AUTH & SUBSCRIPTION LOGIC ---
+let authToken = localStorage.getItem('authToken') || null;
+let currentUser = null;
+let userSubscription = null;
+let isAdmin = false;
+let currentSubscriptionId = null;
+
+// API endpoints
+const AUTH_API_URL = '/api';
+const SUBS_API_URL = '/api/subscription';
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+    loadPipeline();
+    setupEventListeners();
+    setupDragAndDrop();
+    setInterval(() => {
+        const leadCards = document.querySelectorAll('.lead-card');
+        if (leadCards.length > 0) {
+            leadCards.forEach(card => {
+                if (card.getAttribute('draggable') !== 'true') {
+                    card.setAttribute('draggable', 'true');
+                }
+            });
+        }
+    }, 60000);
+    setInterval(() => {
+        if (authToken) loadLeads();
+    }, 10000);
+    // Show login/register on load if not logged in
+    if (!authToken) {
+        openLoginModal();
+    } else {
+        fetchUserProfile();
+    }
+});
+
+// Setup event listeners
+function setupEventListeners() {
+    // Add lead form submission
+    document.getElementById('addLeadForm').addEventListener('submit', handleAddLead);
+    
+    // Edit lead form submission
+    document.getElementById('editLeadForm').addEventListener('submit', handleEditLead);
+    
+    // Setup drag and drop for all lead containers
+    setupDragAndDrop();
+}
+
+// Load all leads from the API
+async function loadLeads() {
+    try {
+        const response = await fetch(API_BASE_URL, {
+            headers: {
+                'Authorization': 'Bearer ' + authToken
+            }
+        });
+        if (!response.ok) throw new Error('Failed to fetch leads');
+        
+        leads = await response.json();
+        renderLeads();
+        updateLeadCounts();
+    } catch (error) {
+        console.error('Error loading leads:', error);
+        showNotification('Error loading leads', 'error');
+    }
+}
+
+// Render leads in the pipeline
+function renderLeads() {
+    if (!currentPipeline || !currentPipeline.columns) return;
+    
+    currentPipeline.columns.forEach(column => {
+        const columnElement = document.querySelector(`[data-status="${column.status}"]`);
+        if (!columnElement) return;
+        
+        const leadsContainer = columnElement.querySelector('.leads-container');
+        if (!leadsContainer) return;
+        
+        const columnLeads = leads.filter(lead => lead.status === column.status);
+        
+        leadsContainer.innerHTML = columnLeads.map(lead => {
+            // Get primary email for display
+            const primaryEmail = lead.emails && lead.emails.length > 0 
+                ? lead.emails.find(email => email.type === 'primary') || lead.emails[0]
+                : null;
+            
+            // Get primary phone for display
+            const primaryPhone = lead.phones && lead.phones.length > 0 
+                ? lead.phones.find(phone => phone.type === 'mobile') || lead.phones[0]
+                : null;
+            
+            return `
+                <div class="lead-card" draggable="true" data-lead-id="${lead._id}">
+                    <div class="lead-header">
+                        <h4>${lead.name}</h4>
+                        <div class="lead-actions">
+                            <button class="btn-icon" onclick="viewLeadDetails('${lead._id}')" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-icon" onclick="openEditLeadModal('${lead._id}')" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon" onclick="deleteLead('${lead._id}')" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="lead-content">
+                        <p class="company">${lead.company}</p>
+                        
+                        <!-- Display primary email -->
+                        ${primaryEmail ? `
+                            <div class="contact-display">
+                                <div class="contact-item-display">
+                                    <span class="contact-type-badge contact-type-${primaryEmail.type}">${primaryEmail.type}</span>
+                                    <span>${primaryEmail.email}</span>
+                                </div>
+                                ${lead.emails.length > 1 ? `<small class="more-contacts">+${lead.emails.length - 1} more emails</small>` : ''}
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Display primary phone -->
+                        ${primaryPhone ? `
+                            <div class="contact-display">
+                                <div class="contact-item-display">
+                                    <span class="contact-type-badge contact-type-${primaryPhone.type}">${primaryPhone.type}</span>
+                                    <span>${primaryPhone.phone}</span>
+                                </div>
+                                ${lead.phones.length > 1 ? `<small class="more-contacts">+${lead.phones.length - 1} more phones</small>` : ''}
+                            </div>
+                        ` : ''}
+                        
+                        ${lead.value ? `<p class="value">$${lead.value.toLocaleString()}</p>` : ''}
+                        ${lead.description ? `<p class="description">${lead.description}</p>` : ''}
+                        ${lead.assignedTo ? `<p class="assigned">Assigned to: ${lead.assignedTo}</p>` : ''}
+                        <div class="lead-meta">
+                            <span class="priority priority-${lead.priority}">${lead.priority}</span>
+                            ${lead.source ? `<span class="source">${lead.source}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    });
+}
+
+// Create a lead card HTML
+function createLeadCard(lead) {
+    const priorityClass = `priority-${lead.priority}`;
+    const formattedValue = lead.value ? `$${lead.value.toLocaleString()}` : 'N/A';
+    const formattedDate = new Date(lead.createdAt).toLocaleDateString();
+    
+    // Get primary email for display
+    const primaryEmail = lead.emails && lead.emails.length > 0 
+        ? lead.emails.find(email => email.type === 'primary') || lead.emails[0]
+        : null;
+    
+    // Get primary phone for display
+    const primaryPhone = lead.phones && lead.phones.length > 0 
+        ? lead.phones.find(phone => phone.type === 'mobile') || lead.phones[0]
+        : null;
+    
+    return `
+        <div class="lead-card" draggable="true" data-lead-id="${lead._id}">
+            <div class="lead-header">
+                <div>
+                    <div class="lead-name">${escapeHtml(lead.name)}</div>
+                    <div class="lead-company">${escapeHtml(lead.company)}</div>
+                </div>
+                <span class="lead-priority ${priorityClass}">${lead.priority}</span>
+            </div>
+            <div class="lead-details">
+                ${primaryEmail ? `
+                    <div class="lead-email">
+                        <i class="fas fa-envelope"></i>
+                        ${escapeHtml(primaryEmail.email)}
+                    </div>
+                ` : ''}
+                ${primaryPhone ? `
+                    <div class="lead-phone">
+                        <i class="fas fa-phone"></i>
+                        ${escapeHtml(primaryPhone.phone)}
+                    </div>
+                ` : ''}
+                <div class="lead-value">
+                    <i class="fas fa-dollar-sign"></i>
+                    ${formattedValue}
+                </div>
+            </div>
+            <div class="lead-actions">
+                <button class="btn-view" onclick="viewLeadDetails('${lead._id}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                <button class="btn-edit" onclick="openEditLeadModal('${lead._id}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn-delete" onclick="deleteLead('${lead._id}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Setup drag and drop functionality
+function setupDragAndDrop() {
+    if (dragAndDropInitialized) {
+        console.log('Drag and drop already initialized, skipping...');
+        return;
+    }
+    
+    console.log('Setting up drag and drop functionality...');
+    
+    // Add event listeners using delegation
+    document.addEventListener('dragstart', function(e) {
+        if (e.target.classList.contains('lead-card')) {
+            handleDragStart(e);
+        }
+    });
+    
+    document.addEventListener('dragend', function(e) {
+        if (e.target.classList.contains('lead-card')) {
+            handleDragEnd(e);
+        }
+    });
+    
+    document.addEventListener('dragover', function(e) {
+        if (e.target.classList.contains('leads-container')) {
+            handleDragOver(e);
+        }
+    });
+    
+    document.addEventListener('drop', function(e) {
+        if (e.target.classList.contains('leads-container')) {
+            handleDrop(e);
+        }
+    });
+    
+    document.addEventListener('dragenter', function(e) {
+        if (e.target.classList.contains('leads-container')) {
+            handleDragEnter(e);
+        }
+    });
+    
+    document.addEventListener('dragleave', function(e) {
+        if (e.target.classList.contains('leads-container')) {
+            handleDragLeave(e);
+        }
+    });
+    
+    dragAndDropInitialized = true;
+    console.log('Drag and drop event delegation setup complete');
+}
+
+// Drag and drop event handlers
+function handleDragStart(e) {
+    draggedElement = e.target;
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.target.outerHTML);
+}
+
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+    draggedElement = null;
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    if (e.target && e.target.classList.contains('leads-container')) {
+        e.target.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    if (e.target && e.target.classList.contains('leads-container')) {
+        e.target.classList.remove('drag-over');
+    }
+}
+
+async function handleDrop(e) {
+    e.preventDefault();
+    if (e.target && e.target.classList.contains('leads-container')) {
+        e.target.classList.remove('drag-over');
+    }
+    
+    if (!draggedElement) return;
+    
+    const leadId = draggedElement.getAttribute('data-lead-id');
+    const newStatus = e.target.getAttribute('data-status') || e.target.closest('.pipeline-column')?.getAttribute('data-status');
+    
+    if (!newStatus) {
+        console.error('Could not determine new status for lead');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/${leadId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + authToken
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (!response.ok) throw new Error('Failed to update lead status');
+        
+        // Update the lead in our local array
+        const leadIndex = leads.findIndex(lead => lead._id === leadId);
+        if (leadIndex !== -1) {
+            leads[leadIndex].status = newStatus;
+        }
+        
+        // Re-render the leads
+        renderLeads();
+        updateLeadCounts();
+        
+        showNotification('Lead status updated successfully', 'success');
+    } catch (error) {
+        console.error('Error updating lead status:', error);
+        showNotification('Error updating lead status', 'error');
+    }
+}
+
+// Handle adding a new lead
+async function handleAddLead(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const leadData = Object.fromEntries(formData.entries());
+    
+    // Process multiple emails
+    const emails = [];
+    const emailInputs = document.querySelectorAll('#emailsContainer input[type="email"]');
+    const emailTypes = document.querySelectorAll('#emailsContainer select');
+    
+    emailInputs.forEach((input, index) => {
+        if (input.value.trim()) {
+            emails.push({
+                email: input.value.trim(),
+                type: emailTypes[index].value
+            });
+        }
+    });
+    
+    // Process multiple phones
+    const phones = [];
+    const phoneInputs = document.querySelectorAll('#phonesContainer input[type="tel"]');
+    const phoneTypes = document.querySelectorAll('#phonesContainer select');
+    
+    phoneInputs.forEach((input, index) => {
+        if (input.value.trim()) {
+            phones.push({
+                phone: input.value.trim(),
+                type: phoneTypes[index].value
+            });
+        }
+    });
+    
+    // Prepare lead data
+    const processedLeadData = {
+        name: leadData.name,
+        company: leadData.company,
+        emails: emails,
+        phones: phones,
+        value: leadData.value ? parseFloat(leadData.value) : 0,
+        description: leadData.description,
+        assignedTo: leadData.assignedTo,
+        priority: leadData.priority,
+        source: leadData.source
+    };
+    
+    try {
+        const response = await fetch(API_BASE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + authToken
+            },
+            body: JSON.stringify(processedLeadData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const newLead = await response.json();
+        leads.push(newLead);
+        
+        renderLeads();
+        updateLeadCounts();
+        setupDragAndDrop();
+        
+        closeAddLeadModal();
+        e.target.reset();
+        showNotification('Lead created successfully', 'success');
+    } catch (error) {
+        console.error('Error creating lead:', error);
+        showNotification(`Error creating lead: ${error.message}`, 'error');
+    }
+}
+
+// View lead details
+function viewLeadDetails(leadId) {
+    const lead = leads.find(l => l._id === leadId);
+    if (!lead) return;
+    
+    // Populate the details modal
+    document.getElementById('detailName').textContent = lead.name;
+    document.getElementById('detailCompany').textContent = lead.company;
+    
+    // Display multiple emails
+    const detailEmails = document.getElementById('detailEmails');
+    if (lead.emails && lead.emails.length > 0) {
+        detailEmails.innerHTML = lead.emails.map(email => `
+            <div class="contact-item-display">
+                <span class="contact-type-badge contact-type-${email.type}">${email.type}</span>
+                <span>${email.email}</span>
+            </div>
+        `).join('');
+    } else {
+        detailEmails.innerHTML = '<span class="no-data">No email addresses</span>';
+    }
+    
+    // Display multiple phones
+    const detailPhones = document.getElementById('detailPhones');
+    if (lead.phones && lead.phones.length > 0) {
+        detailPhones.innerHTML = lead.phones.map(phone => `
+            <div class="contact-item-display">
+                <span class="contact-type-badge contact-type-${phone.type}">${phone.type}</span>
+                <span>${phone.phone}</span>
+            </div>
+        `).join('');
+    } else {
+        detailPhones.innerHTML = '<span class="no-data">No phone numbers</span>';
+    }
+    
+    document.getElementById('detailValue').textContent = lead.value ? `$${lead.value.toLocaleString()}` : 'Not specified';
+    document.getElementById('detailDescription').textContent = lead.description || 'No description';
+    document.getElementById('detailAssignedTo').textContent = lead.assignedTo || 'Unassigned';
+    document.getElementById('detailPriority').textContent = lead.priority || 'Medium';
+    document.getElementById('detailSource').textContent = lead.source || 'Not specified';
+    document.getElementById('detailStatus').textContent = lead.status || 'Qualification';
+    document.getElementById('detailCreated').textContent = new Date(lead.createdAt).toLocaleDateString();
+    document.getElementById('detailUpdated').textContent = new Date(lead.updatedAt).toLocaleDateString();
+    
+    // Show the modal
+    document.getElementById('leadDetailsModal').style.display = 'block';
+}
+
+// Close lead details modal
+function closeLeadDetailsModal() {
+    document.getElementById('leadDetailsModal').style.display = 'none';
+}
+
+// Delete lead
+async function deleteLead(leadId) {
+    if (!confirm('Are you sure you want to delete this lead?')) return;
+    
+    try {
+        console.log('Deleting lead with ID:', leadId);
+        const response = await fetch(`${API_BASE_URL}/${leadId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + authToken
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Delete result:', result);
+        
+        // Remove from local array
+        leads = leads.filter(lead => lead._id !== leadId);
+        
+        renderLeads();
+        updateLeadCounts();
+        setupDragAndDrop();
+        
+        showNotification('Lead deleted successfully', 'success');
+    } catch (error) {
+        console.error('Error deleting lead:', error);
+        showNotification(`Error deleting lead: ${error.message}`, 'error');
+    }
+}
+
+// Update lead counts for each column
+function updateLeadCounts() {
+    if (!currentPipeline || !currentPipeline.columns) return;
+    
+    currentPipeline.columns.forEach(column => {
+        const count = leads.filter(lead => lead.status === column.status).length;
+        const countElement = document.querySelector(`[data-status="${column.status}"] .column-count`);
+        if (countElement) {
+            countElement.textContent = count;
+        }
+    });
+}
+
+// Modal functions
+function openAddLeadModal() {
+    if (!authToken) {
+        openLoginModal();
+        return;
+    }
+    if (userSubscription && userSubscription.status === 'pending') {
+        showNotification('Subscription not activated. Please wait for admin approval.', 'error');
+        return;
+    }
+    if (userSubscription && userSubscription.expiry && new Date(userSubscription.expiry) < new Date()) {
+        showNotification('Subscription expired. Please renew your subscription.', 'error');
+        openSubscriptionModal();
+        return;
+    }
+    if (userSubscription && (userSubscription.plan === 'trial' || userSubscription.status === 'trial')) {
+        // Always check trialLeadTotal from backend for trial users
+        fetch('/api/api-key', { headers: { 'Authorization': 'Bearer ' + authToken } })
+            .then(res => res.json())
+            .then(data => {
+                if (typeof data.trialLeadTotal !== 'undefined' && data.trialLeadTotal >= 50) {
+                    openSubscriptionModal();
+                } else {
+                    document.getElementById('addLeadModal').style.display = 'block';
+                }
+            });
+        return;
+    }
+    document.getElementById('addLeadModal').style.display = 'block';
+}
+
+function closeAddLeadModal() {
+    document.getElementById('addLeadModal').style.display = 'none';
+}
+
+function closeEditLeadModal() {
+    document.getElementById('editLeadModal').style.display = 'none';
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const addModal = document.getElementById('addLeadModal');
+    const detailsModal = document.getElementById('leadDetailsModal');
+    const editModal = document.getElementById('editLeadModal');
+    const pipelineModal = document.getElementById('pipelineModal');
+    const columnModal = document.getElementById('columnModal');
+    
+    if (event.target === addModal) {
+        closeAddLeadModal();
+    }
+    if (event.target === detailsModal) {
+        closeLeadDetailsModal();
+    }
+    if (event.target === editModal) {
+        closeEditLeadModal();
+    }
+    if (event.target === pipelineModal) {
+        closePipelineModal();
+    }
+    if (event.target === columnModal) {
+        closeColumnModal();
+    }
+}
+
+// Utility functions
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db'};
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 10000;
+            max-width: 300px;
+            animation: slideIn 0.3s ease;
+        ">
+            ${message}
+        </div>
+    `;
+    
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(notification);
+    
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+        style.remove();
+    }, 3000);
+}
+
+// Open edit lead modal
+function openEditLeadModal(leadId) {
+    const lead = leads.find(l => l._id === leadId);
+    if (!lead) return;
+    
+    // Reset contact counters
+    resetContactCounters();
+    
+    // Populate form fields
+    document.getElementById('editLeadId').value = lead._id;
+    document.getElementById('editName').value = lead.name;
+    document.getElementById('editCompany').value = lead.company;
+    document.getElementById('editValue').value = lead.value || '';
+    document.getElementById('editDescription').value = lead.description || '';
+    document.getElementById('editAssignedTo').value = lead.assignedTo || '';
+    document.getElementById('editPriority').value = lead.priority || 'medium';
+    document.getElementById('editSource').value = lead.source || '';
+    document.getElementById('editStatus').value = lead.status || 'qualification';
+    
+    // Populate multiple emails
+    const editEmailsContainer = document.getElementById('editEmailsContainer');
+    editEmailsContainer.innerHTML = '';
+    
+    if (lead.emails && lead.emails.length > 0) {
+        lead.emails.forEach((emailData, index) => {
+            const emailDiv = document.createElement('div');
+            emailDiv.className = 'contact-item';
+            emailDiv.innerHTML = `
+                <div class="contact-inputs">
+                    <input type="email" name="emails[${index}][email]" placeholder="Email address" value="${emailData.email}" required>
+                    <select name="emails[${index}][type]">
+                        <option value="primary" ${emailData.type === 'primary' ? 'selected' : ''}>Primary</option>
+                        <option value="work" ${emailData.type === 'work' ? 'selected' : ''}>Work</option>
+                        <option value="personal" ${emailData.type === 'personal' ? 'selected' : ''}>Personal</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-remove-contact" onclick="removeContact('editEmail', ${index})" style="display: ${lead.emails.length > 1 ? 'block' : 'none'}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            editEmailsContainer.appendChild(emailDiv);
+            editEmailCount = index + 1;
+        });
+    } else {
+        // Add default empty email field
+        const emailDiv = document.createElement('div');
+        emailDiv.className = 'contact-item';
+        emailDiv.innerHTML = `
+            <div class="contact-inputs">
+                <input type="email" name="emails[0][email]" placeholder="Email address" required>
+                <select name="emails[0][type]">
+                    <option value="primary">Primary</option>
+                    <option value="work">Work</option>
+                    <option value="personal">Personal</option>
+                </select>
+            </div>
+            <button type="button" class="btn-remove-contact" onclick="removeContact('editEmail', 0)" style="display: none;">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        editEmailsContainer.appendChild(emailDiv);
+        editEmailCount = 1;
+    }
+    
+    // Populate multiple phones
+    const editPhonesContainer = document.getElementById('editPhonesContainer');
+    editPhonesContainer.innerHTML = '';
+    
+    if (lead.phones && lead.phones.length > 0) {
+        lead.phones.forEach((phoneData, index) => {
+            const phoneDiv = document.createElement('div');
+            phoneDiv.className = 'contact-item';
+            phoneDiv.innerHTML = `
+                <div class="contact-inputs">
+                    <input type="tel" name="phones[${index}][phone]" placeholder="Phone number" value="${phoneData.phone}">
+                    <select name="phones[${index}][type]">
+                        <option value="mobile" ${phoneData.type === 'mobile' ? 'selected' : ''}>Mobile</option>
+                        <option value="work" ${phoneData.type === 'work' ? 'selected' : ''}>Work</option>
+                        <option value="home" ${phoneData.type === 'home' ? 'selected' : ''}>Home</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-remove-contact" onclick="removeContact('editPhone', ${index})" style="display: ${lead.phones.length > 1 ? 'block' : 'none'}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            editPhonesContainer.appendChild(phoneDiv);
+            editPhoneCount = index + 1;
+        });
+    } else {
+        // Add default empty phone field
+        const phoneDiv = document.createElement('div');
+        phoneDiv.className = 'contact-item';
+        phoneDiv.innerHTML = `
+            <div class="contact-inputs">
+                <input type="tel" name="phones[0][phone]" placeholder="Phone number">
+                <select name="phones[0][type]">
+                    <option value="mobile">Mobile</option>
+                    <option value="work">Work</option>
+                    <option value="home">Home</option>
+                </select>
+            </div>
+            <button type="button" class="btn-remove-contact" onclick="removeContact('editPhone', 0)" style="display: none;">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        editPhonesContainer.appendChild(phoneDiv);
+        editPhoneCount = 1;
+    }
+    
+    document.getElementById('editLeadModal').style.display = 'block';
+}
+
+// Handle editing a lead
+async function handleEditLead(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const leadData = Object.fromEntries(formData.entries());
+    const leadId = leadData.leadId;
+    
+    // Process multiple emails
+    const emails = [];
+    const emailInputs = document.querySelectorAll('#editEmailsContainer input[type="email"]');
+    const emailTypes = document.querySelectorAll('#editEmailsContainer select');
+    
+    emailInputs.forEach((input, index) => {
+        if (input.value.trim()) {
+            emails.push({
+                email: input.value.trim(),
+                type: emailTypes[index].value
+            });
+        }
+    });
+    
+    // Process multiple phones
+    const phones = [];
+    const phoneInputs = document.querySelectorAll('#editPhonesContainer input[type="tel"]');
+    const phoneTypes = document.querySelectorAll('#editPhonesContainer select');
+    
+    phoneInputs.forEach((input, index) => {
+        if (input.value.trim()) {
+            phones.push({
+                phone: input.value.trim(),
+                type: phoneTypes[index].value
+            });
+        }
+    });
+    
+    // Prepare lead data
+    const processedLeadData = {
+        name: leadData.name,
+        company: leadData.company,
+        emails: emails,
+        phones: phones,
+        value: leadData.value ? parseFloat(leadData.value) : 0,
+        description: leadData.description,
+        assignedTo: leadData.assignedTo,
+        priority: leadData.priority,
+        source: leadData.source,
+        status: leadData.status
+    };
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/${leadId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(processedLeadData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const updatedLead = await response.json();
+        const index = leads.findIndex(lead => lead._id === leadId);
+        if (index !== -1) {
+            leads[index] = updatedLead;
+        }
+        
+        renderLeads();
+        updateLeadCounts();
+        setupDragAndDrop();
+        
+        closeEditLeadModal();
+        showNotification('Lead updated successfully', 'success');
+    } catch (error) {
+        console.error('Error updating lead:', error);
+        showNotification(`Error updating lead: ${error.message}`, 'error');
+    }
+}
+
+// Refresh drag and drop functionality
+function refreshDragAndDrop() {
+    console.log('Manually refreshing drag and drop functionality...');
+    setupDragAndDrop();
+    showNotification('Drag and drop refreshed', 'success');
+}
+
+// Pipeline Management Functions
+async function loadPipeline() {
+    try {
+        console.log('Loading pipeline configuration...');
+        const response = await fetch(`${PIPELINE_API_URL}/default`);
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        currentPipeline = await response.json();
+        console.log('Pipeline loaded:', currentPipeline);
+        
+        // Ensure pipeline has required properties
+        if (!currentPipeline.columns) {
+            currentPipeline.columns = [];
+        }
+        
+        renderPipeline();
+    } catch (error) {
+        console.error('Error loading pipeline:', error);
+        showNotification(`Error loading pipeline: ${error.message}`, 'error');
+        
+        // Create a default pipeline if loading fails
+        currentPipeline = {
+            name: 'Default Pipeline',
+            isDefault: true,
+            columns: [
+                { id: 'qualification', name: 'Qualification', icon: 'fas fa-search', color: '#667eea', order: 1 },
+                { id: 'need-analysis', name: 'Need Analysis', icon: 'fas fa-clipboard-list', color: '#f39c12', order: 2 },
+                { id: 'price-quote', name: 'Price Quote', icon: 'fas fa-dollar-sign', color: '#27ae60', order: 3 },
+                { id: 'review', name: 'Review', icon: 'fas fa-eye', color: '#9b59b6', order: 4 },
+                { id: 'closed', name: 'Closed', icon: 'fas fa-check-circle', color: '#2ecc71', order: 5 },
+                { id: 'rejected', name: 'Rejected', icon: 'fas fa-times-circle', color: '#e74c3c', order: 6 }
+            ]
+        };
+        
+        renderPipeline();
+    }
+}
+
+function renderPipeline() {
+    if (!currentPipeline || !currentPipeline.columns) return;
+    
+    const pipelineContainer = document.querySelector('.pipeline-container');
+    const currentPipelineName = document.getElementById('currentPipelineName');
+    
+    if (currentPipelineName) {
+        currentPipelineName.textContent = currentPipeline.name;
+    }
+    
+    // Sort columns by order
+    const sortedColumns = currentPipeline.columns.sort((a, b) => a.order - b.order);
+    
+    // Generate HTML for pipeline columns
+    const pipelineHTML = sortedColumns.map(column => `
+        <div class="pipeline-column" data-status="${column.id}">
+            <div class="column-header">
+                <h3><i class="${column.icon}" style="color: ${column.color}"></i> ${column.name}</h3>
+                <span class="lead-count" id="${column.id}-count">0</span>
+            </div>
+            <div class="leads-container" id="${column.id}-leads"></div>
+        </div>
+    `).join('');
+    
+    if (pipelineContainer) {
+        pipelineContainer.innerHTML = pipelineHTML;
+    }
+    
+    // Re-render leads with new pipeline structure
+    if (leads.length > 0) {
+        renderLeads();
+        updateLeadCounts();
+    }
+}
+
+// Render leads in their respective columns (updated for dynamic pipeline)
+function renderLeads() {
+    if (!currentPipeline || !currentPipeline.columns) return;
+    
+    const sortedColumns = currentPipeline.columns.sort((a, b) => a.order - b.order);
+    
+    sortedColumns.forEach(column => {
+        const container = document.getElementById(`${column.id}-leads`);
+        if (container) {
+            const statusLeads = leads.filter(lead => lead.status === column.id);
+            container.innerHTML = statusLeads.map(lead => createLeadCard(lead)).join('');
+        }
+    });
+}
+
+// Update lead counts for each column (updated for dynamic pipeline)
+function updateLeadCounts() {
+    if (!currentPipeline || !currentPipeline.columns) return;
+    
+    currentPipeline.columns.forEach(column => {
+        const count = leads.filter(lead => lead.status === column.status).length;
+        const countElement = document.querySelector(`[data-status="${column.status}"] .column-count`);
+        if (countElement) {
+            countElement.textContent = count;
+        }
+    });
+}
+
+// Pipeline Modal Functions
+function openPipelineModal() {
+    loadPipelineColumns();
+    document.getElementById('pipelineModal').style.display = 'block';
+}
+
+function closePipelineModal() {
+    document.getElementById('pipelineModal').style.display = 'none';
+}
+
+async function loadPipelineColumns() {
+    if (!currentPipeline || !currentPipeline.columns) return;
+    
+    const container = document.getElementById('columnsContainer');
+    const sortedColumns = currentPipeline.columns.sort((a, b) => a.order - b.order);
+    
+    const columnsHTML = sortedColumns.map((column, index) => `
+        <div class="column-card" data-index="${index}">
+            <div class="column-info">
+                <div class="column-icon" style="background-color: ${column.color}">
+                    <i class="${column.icon}"></i>
+                </div>
+                <div class="column-details">
+                    <h4>${column.name}</h4>
+                    <p>ID: ${column.id} | Order: ${column.order}</p>
+                </div>
+            </div>
+            <div class="column-actions">
+                <button class="btn-move-up" onclick="moveColumn(${index}, -1)" ${index === 0 ? 'disabled' : ''}>
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <button class="btn-move-down" onclick="moveColumn(${index}, 1)" ${index === sortedColumns.length - 1 ? 'disabled' : ''}>
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+                <button class="btn-edit-column" onclick="editColumn(${index})">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn-delete-column" onclick="deleteColumn(${index})" ${currentPipeline.columns.length <= 1 ? 'disabled' : ''}>
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = columnsHTML;
+    
+    // Scroll to bottom to show all columns
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 100);
+}
+
+function addNewColumn() {
+    editingColumnIndex = -1;
+    document.getElementById('columnModalTitle').textContent = 'Add New Column';
+    document.getElementById('columnForm').reset();
+    document.getElementById('columnIndex').value = '';
+    document.getElementById('columnModal').style.display = 'block';
+}
+
+function editColumn(index) {
+    editingColumnIndex = index;
+    const column = currentPipeline.columns[index];
+    
+    document.getElementById('columnModalTitle').textContent = 'Edit Column';
+    document.getElementById('columnName').value = column.name;
+    document.getElementById('columnIcon').value = column.icon;
+    document.getElementById('columnColor').value = column.color;
+    document.getElementById('columnIndex').value = index;
+    
+    document.getElementById('columnModal').style.display = 'block';
+}
+
+function closeColumnModal() {
+    document.getElementById('columnModal').style.display = 'none';
+    editingColumnIndex = -1;
+}
+
+async function deleteColumn(index) {
+    if (currentPipeline.columns.length <= 1) {
+        showNotification('Cannot delete the last column', 'error');
+        return;
+    }
+    
+    if (confirm('Are you sure you want to delete this column? All leads in this column will be moved to the first column.')) {
+        const deletedColumn = currentPipeline.columns[index];
+        
+        // Move leads to first column
+        leads.forEach(lead => {
+            if (lead.status === deletedColumn.id) {
+                lead.status = currentPipeline.columns[0].id;
+            }
+        });
+        
+        // Remove column
+        currentPipeline.columns.splice(index, 1);
+        
+        // Update order
+        currentPipeline.columns.forEach((col, idx) => {
+            col.order = idx + 1;
+        });
+        
+        loadPipelineColumns();
+        renderPipeline();
+        updateLeadCounts();
+        
+        // Automatically save changes to database
+        await savePipelineChanges(false);
+    }
+}
+
+async function moveColumn(index, direction) {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= currentPipeline.columns.length) return;
+    
+    // Swap columns
+    const temp = currentPipeline.columns[index];
+    currentPipeline.columns[index] = currentPipeline.columns[newIndex];
+    currentPipeline.columns[newIndex] = temp;
+    
+    // Update order
+    currentPipeline.columns.forEach((col, idx) => {
+        col.order = idx + 1;
+    });
+    
+    loadPipelineColumns();
+    
+    // Automatically save changes to database
+    await savePipelineChanges(false);
+}
+
+// Function to scroll to a specific column
+function scrollToColumn(index) {
+    const container = document.getElementById('columnsContainer');
+    const columnCards = container.querySelectorAll('.column-card');
+    
+    if (columnCards[index]) {
+        columnCards[index].scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+        });
+    }
+}
+
+// Handle column form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const columnForm = document.getElementById('columnForm');
+    if (columnForm) {
+        columnForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentPipeline) {
+                showNotification('Pipeline not loaded', 'error');
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const columnData = {
+                name: formData.get('name'),
+                icon: formData.get('icon') || 'fas fa-circle',
+                color: formData.get('color') || '#667eea'
+            };
+            
+            if (editingColumnIndex === -1) {
+                // Add new column
+                const newId = 'column-' + Date.now();
+                const newOrder = currentPipeline.columns.length + 1;
+                
+                currentPipeline.columns.push({
+                    id: newId,
+                    name: columnData.name,
+                    icon: columnData.icon,
+                    color: columnData.color,
+                    order: newOrder
+                });
+            } else {
+                // Edit existing column
+                currentPipeline.columns[editingColumnIndex].name = columnData.name;
+                currentPipeline.columns[editingColumnIndex].icon = columnData.icon;
+                currentPipeline.columns[editingColumnIndex].color = columnData.color;
+            }
+            
+            closeColumnModal();
+            loadPipelineColumns();
+            renderPipeline();
+            
+            // Scroll to the new/edited column
+            setTimeout(() => {
+                if (editingColumnIndex === -1) {
+                    // Scroll to the last column (newly added)
+                    scrollToColumn(currentPipeline.columns.length - 1);
+                } else {
+                    // Scroll to the edited column
+                    scrollToColumn(editingColumnIndex);
+                }
+            }, 200);
+            
+            // Automatically save changes to database
+            await savePipelineChanges(false);
+        });
+    }
+});
+
+async function savePipelineChanges(closeModal = true) {
+    try {
+        console.log('Saving pipeline changes:', currentPipeline);
+        
+        let response;
+        if (currentPipeline._id) {
+            // Update existing pipeline
+            response = await fetch(`${PIPELINE_API_URL}/${currentPipeline._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentPipeline)
+            });
+        } else {
+            // Create new pipeline
+            response = await fetch(PIPELINE_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentPipeline)
+            });
+        }
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const savedPipeline = await response.json();
+        currentPipeline = savedPipeline;
+        
+        showNotification('Pipeline changes saved successfully', 'success');
+        
+        if (closeModal) {
+            closePipelineModal();
+        }
+        
+        // Reload the pipeline to reflect changes
+        await loadPipeline();
+    } catch (error) {
+        console.error('Error saving pipeline changes:', error);
+        showNotification(`Error saving pipeline changes: ${error.message}`, 'error');
+    }
+}
+
+// Update window click handler to include new modals
+window.onclick = function(event) {
+    const addModal = document.getElementById('addLeadModal');
+    const detailsModal = document.getElementById('leadDetailsModal');
+    const editModal = document.getElementById('editLeadModal');
+    const pipelineModal = document.getElementById('pipelineModal');
+    const columnModal = document.getElementById('columnModal');
+    
+    if (event.target === addModal) {
+        closeAddLeadModal();
+    }
+    if (event.target === detailsModal) {
+        closeLeadDetailsModal();
+    }
+    if (event.target === editModal) {
+        closeEditLeadModal();
+    }
+    if (event.target === pipelineModal) {
+        closePipelineModal();
+    }
+    if (event.target === columnModal) {
+        closeColumnModal();
+    }
+}
+
+function addEmail() {
+    const container = document.getElementById('emailsContainer');
+    const newEmailDiv = document.createElement('div');
+    newEmailDiv.className = 'contact-item';
+    newEmailDiv.innerHTML = `
+        <div class="contact-inputs">
+            <input type="email" name="emails[${emailCount}][email]" placeholder="Email address" required>
+            <select name="emails[${emailCount}][type]">
+                <option value="primary">Primary</option>
+                <option value="work">Work</option>
+                <option value="personal">Personal</option>
+            </select>
+        </div>
+        <button type="button" class="btn-remove-contact" onclick="removeContact('email', ${emailCount})">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newEmailDiv);
+    emailCount++;
+    
+    // Show remove buttons for all email items
+    updateRemoveButtons('emailsContainer');
+}
+
+function addPhone() {
+    const container = document.getElementById('phonesContainer');
+    const newPhoneDiv = document.createElement('div');
+    newPhoneDiv.className = 'contact-item';
+    newPhoneDiv.innerHTML = `
+        <div class="contact-inputs">
+            <input type="tel" name="phones[${phoneCount}][phone]" placeholder="Phone number">
+            <select name="phones[${phoneCount}][type]">
+                <option value="mobile">Mobile</option>
+                <option value="work">Work</option>
+                <option value="home">Home</option>
+            </select>
+        </div>
+        <button type="button" class="btn-remove-contact" onclick="removeContact('phone', ${phoneCount})">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newPhoneDiv);
+    phoneCount++;
+    
+    // Show remove buttons for all phone items
+    updateRemoveButtons('phonesContainer');
+}
+
+function addEditEmail() {
+    const container = document.getElementById('editEmailsContainer');
+    const newEmailDiv = document.createElement('div');
+    newEmailDiv.className = 'contact-item';
+    newEmailDiv.innerHTML = `
+        <div class="contact-inputs">
+            <input type="email" name="emails[${editEmailCount}][email]" placeholder="Email address" required>
+            <select name="emails[${editEmailCount}][type]">
+                <option value="primary">Primary</option>
+                <option value="work">Work</option>
+                <option value="personal">Personal</option>
+            </select>
+        </div>
+        <button type="button" class="btn-remove-contact" onclick="removeContact('editEmail', ${editEmailCount})">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newEmailDiv);
+    editEmailCount++;
+    
+    // Show remove buttons for all email items
+    updateRemoveButtons('editEmailsContainer');
+}
+
+function addEditPhone() {
+    const container = document.getElementById('editPhonesContainer');
+    const newPhoneDiv = document.createElement('div');
+    newPhoneDiv.className = 'contact-item';
+    newPhoneDiv.innerHTML = `
+        <div class="contact-inputs">
+            <input type="tel" name="phones[${editPhoneCount}][phone]" placeholder="Phone number">
+            <select name="phones[${editPhoneCount}][type]">
+                <option value="mobile">Mobile</option>
+                <option value="work">Work</option>
+                <option value="home">Home</option>
+            </select>
+        </div>
+        <button type="button" class="btn-remove-contact" onclick="removeContact('editPhone', ${editPhoneCount})">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newPhoneDiv);
+    editPhoneCount++;
+    
+    // Show remove buttons for all phone items
+    updateRemoveButtons('editPhonesContainer');
+}
+
+function removeContact(type, index) {
+    let containerId;
+    let count;
+    
+    switch(type) {
+        case 'email':
+            containerId = 'emailsContainer';
+            count = emailCount;
+            break;
+        case 'phone':
+            containerId = 'phonesContainer';
+            count = phoneCount;
+            break;
+        case 'editEmail':
+            containerId = 'editEmailsContainer';
+            count = editEmailCount;
+            break;
+        case 'editPhone':
+            containerId = 'editPhonesContainer';
+            count = editPhoneCount;
+            break;
+    }
+    
+    const container = document.getElementById(containerId);
+    const items = container.querySelectorAll('.contact-item');
+    
+    if (items.length > 1) {
+        items[index].remove();
+        updateRemoveButtons(containerId);
+    }
+}
+
+function updateRemoveButtons(containerId) {
+    const container = document.getElementById(containerId);
+    const items = container.querySelectorAll('.contact-item');
+    const removeButtons = container.querySelectorAll('.btn-remove-contact');
+    
+    // Show remove button only if there's more than one item
+    removeButtons.forEach((button, index) => {
+        if (items.length > 1) {
+            button.style.display = 'block';
+        } else {
+            button.style.display = 'none';
+        }
+    });
+}
+
+// Reset contact counters when modals are opened
+function resetContactCounters() {
+    emailCount = 1;
+    phoneCount = 1;
+    editEmailCount = 1;
+    editPhoneCount = 1;
+}
+
+// --- SUBSCRIPTION MODAL LOGIC ---
+function openSubscriptionModal() {
+    document.getElementById('subscriptionModal').style.display = 'block';
+    document.getElementById('subscriptionStepPlans').style.display = '';
+    document.getElementById('subscriptionStepQR').style.display = 'none';
+    document.getElementById('subscriptionStepPending').style.display = 'none';
+    loadPlans();
+}
+function closeSubscriptionModal() {
+    document.getElementById('subscriptionModal').style.display = 'none';
+}
+async function loadPlans() {
+    const res = await fetch(SUBS_API_URL + '/plans', { headers: { Authorization: 'Bearer ' + authToken } });
+    const plans = await res.json();
+    const plansContainer = document.getElementById('plansContainer');
+    plansContainer.innerHTML = plans.map(plan => `
+        <div class="plan-card">
+            <h4>${plan.label}</h4>
+            <p>₹${plan.price} / ${plan.label.toLowerCase()}</p>
+            <button class="btn btn-primary" onclick="selectPlan('${plan.plan}')">Select</button>
+        </div>
+    `).join('');
+}
+async function selectPlan(plan) {
+    const res = await fetch(SUBS_API_URL + '/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
+        body: JSON.stringify({ plan })
+    });
+    const data = await res.json();
+    if (data.qrUrl) {
+        currentSubscriptionId = data.subscriptionId;
+        document.getElementById('subscriptionStepPlans').style.display = 'none';
+        document.getElementById('subscriptionStepQR').style.display = '';
+        document.getElementById('paymentQR').src = data.qrUrl;
+        // Add Pay Now button
+        const payNowBtnId = 'payNowBtn';
+        let payNowBtn = document.getElementById(payNowBtnId);
+        if (!payNowBtn) {
+            payNowBtn = document.createElement('a');
+            payNowBtn.id = payNowBtnId;
+            payNowBtn.className = 'btn btn-primary';
+            payNowBtn.innerText = 'Pay Now';
+            payNowBtn.style.display = 'block';
+            payNowBtn.style.margin = '16px 0';
+            // Insert above UTR input
+            const qrStep = document.getElementById('subscriptionStepQR');
+            qrStep.insertBefore(payNowBtn, qrStep.querySelector('.form-group'));
+        }
+        // Set amount and returnUrl
+        let amount = 100; // default fallback
+        if (plan === 'monthly') amount = 1;
+        if (plan === 'yearly') amount = 8629;
+        // Include userId and plan in returnUrl for backend activation
+        let userId = currentUser && currentUser._id ? currentUser._id : '';
+        // Use URLSearchParams to build the query string safely
+        const params = new URLSearchParams({ userId, plan });
+        const returnUrl = encodeURIComponent(`https://crm.gavenue.io/payment-success?${params.toString()}`);
+        payNowBtn.href = `https://gavenue.in/checkout?amount=${amount}&returnUrl=${returnUrl}`;
+        payNowBtn.target = '_blank';
+    }
+}
+async function submitUTR() {
+    const utr = document.getElementById('utrInput').value;
+    if (!utr) return showNotification('Please enter UTR/Transaction ID', 'error');
+    const res = await fetch(SUBS_API_URL + '/utr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
+        body: JSON.stringify({ subscriptionId: currentSubscriptionId, utr })
+    });
+    if (res.ok) {
+        document.getElementById('subscriptionStepQR').style.display = 'none';
+        document.getElementById('subscriptionStepPending').style.display = '';
+        fetchUserProfile();
+    } else {
+        showNotification('Failed to submit UTR', 'error');
+    }
+}
+
+// --- ADMIN APPROVAL LOGIC ---
+function openAdminModal() {
+    document.getElementById('adminModal').style.display = 'block';
+    loadPendingApprovals();
+}
+function closeAdminModal() {
+    document.getElementById('adminModal').style.display = 'none';
+}
+async function loadPendingApprovals() {
+    const res = await fetch(SUBS_API_URL + '/admin/pending', { headers: { Authorization: 'Bearer ' + authToken } });
+    const approvals = await res.json();
+    const container = document.getElementById('pendingApprovalsContainer');
+    container.innerHTML = approvals.map(sub => `
+        <div class="approval-card">
+            <p><b>User:</b> ${sub.user.email}</p>
+            <p><b>Plan:</b> ${sub.plan}</p>
+            <p><b>UTR:</b> ${sub.payment.utr || 'N/A'}</p>
+            <button class="btn btn-success" onclick="approveSubscription('${sub._id}')">Approve</button>
+        </div>
+    `).join('');
+}
+async function approveSubscription(subscriptionId) {
+    const res = await fetch(SUBS_API_URL + '/admin/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + authToken },
+        body: JSON.stringify({ subscriptionId })
+    });
+    if (res.ok) {
+        showNotification('Subscription approved', 'success');
+        loadPendingApprovals();
+    } else {
+        showNotification('Failed to approve', 'error');
+    }
+}
+
+// Fetch user profile and subscription
+async function fetchUserProfile() {
+    try {
+        const res = await fetch(SUBS_API_URL + '/status', {
+            headers: { Authorization: 'Bearer ' + authToken }
+        });
+        if (!res.ok) throw new Error('Not authenticated');
+        const data = await res.json();
+        userSubscription = data.subscription;
+        currentUser = { _id: data._id, email: data.email };
+        isAdmin = userSubscription && userSubscription.isAdmin;
+        document.getElementById('logoutBtn').style.display = '';
+        // Load API key when profile is fetched
+        loadApiKey();
+        // Optionally show admin button if isAdmin
+        loadLeads(); // Load leads after successful profile fetch
+    } catch {
+        logout();
+    }
+}
+
+// Login/Register logic
+function openLoginModal() {
+    document.getElementById('loginModal').style.display = 'block';
+}
+function closeLoginModal() {
+    document.getElementById('loginModal').style.display = 'none';
+}
+function openRegisterModal() {
+    closeLoginModal();
+    document.getElementById('registerModal').style.display = 'block';
+}
+function closeRegisterModal() {
+    document.getElementById('registerModal').style.display = 'none';
+}
+function logout() {
+    localStorage.removeItem('authToken');
+    authToken = null;
+    currentUser = null;
+    userSubscription = null;
+    document.getElementById('logoutBtn').style.display = 'none';
+    openLoginModal();
+}
+
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    try {
+        const res = await fetch(AUTH_API_URL + '/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+            authToken = data.token;
+            localStorage.setItem('authToken', authToken);
+            closeLoginModal();
+            fetchUserProfile();
+            loadLeads();
+        } else {
+            showNotification(data.message || 'Login failed', 'error');
+        }
+    } catch {
+        showNotification('Login error', 'error');
+    }
+});
+
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    try {
+        const res = await fetch(AUTH_API_URL + '/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            closeRegisterModal();
+            openLoginModal();
+            showNotification('Registration successful. Please login.', 'success');
+        } else {
+            showNotification(data.message || 'Registration failed', 'error');
+        }
+    } catch {
+        showNotification('Registration error', 'error');
+    }
+});
+
+// Profile Modal Functions
+function openProfileModal() {
+    document.getElementById('profileModal').style.display = 'block';
+    loadApiKey();
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').style.display = 'none';
+}
+
+async function loadApiKey() {
+    try {
+        const response = await fetch(AUTH_API_URL + '/api-key', {
+            headers: {
+                'Authorization': 'Bearer ' + authToken
+            }
+        });
+        if (!response.ok) throw new Error('Failed to fetch API key');
+        const data = await response.json();
+        document.getElementById('apiKeyDisplay').value = data.apiKey;
+        // Show API request limit message if trial and limit reached
+        if (userSubscription && (userSubscription.plan === 'trial' || userSubscription.status === 'trial')) {
+            let trialLeadMsg = '';
+            if (typeof data.trialLeadTotal !== 'undefined') {
+                trialLeadMsg += `<span style=\"color:#666;font-size:13px;\">Trial leads added: ${data.trialLeadTotal}/50</span><br>`;
+            }
+            if (typeof data.currentLeadCount !== 'undefined') {
+                trialLeadMsg += `<span style=\"color:#666;font-size:13px;\">Current leads: ${data.currentLeadCount}/50</span><br>`;
+            }
+            if (typeof data.apiRequestCount !== 'undefined' && data.apiRequestCount >= 50) {
+                document.getElementById('apiLimitMessage').innerHTML = trialLeadMsg + '<span style=\"color:#e74c3c;font-weight:bold;\">API request limit exhausted. Please take a subscription to continue.</span><br><button class=\"btn btn-primary\" style=\"margin-top:8px;\" onclick=\"openSubscriptionModal()\"><i class=\"fas fa-shopping-cart\"></i> Buy/Upgrade</button>';
+            } else {
+                document.getElementById('apiLimitMessage').innerHTML = trialLeadMsg;
+            }
+        } else {
+            document.getElementById('apiLimitMessage').innerHTML = '';
+        }
+    } catch (error) {
+        showNotification('Error loading API key', 'error');
+    }
+}
+
+async function regenerateApiKey() {
+    if (!confirm('Are you sure you want to regenerate your API key? This will invalidate your existing key.')) {
+        return;
+    }
+    try {
+        const response = await fetch(AUTH_API_URL + '/api-key/regenerate', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + authToken
+            }
+        });
+        if (!response.ok) throw new Error('Failed to regenerate API key');
+        const data = await response.json();
+        document.getElementById('apiKeyDisplay').value = data.apiKey;
+        showNotification('API key regenerated successfully', 'success');
+    } catch (error) {
+        showNotification('Error regenerating API key', 'error');
+    }
+}
+
+function copyApiKey() {
+    const apiKeyInput = document.getElementById('apiKeyDisplay');
+    apiKeyInput.select();
+    document.execCommand('copy');
+    showNotification('API key copied to clipboard', 'success');
+} 

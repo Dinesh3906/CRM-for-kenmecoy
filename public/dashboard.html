@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Dashboard - Professional</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-chart-line"></i>
+            <span class="sidebar-title">CRM System</span>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <div class="user-profile">
+            <div class="user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="user-info">
+                <div class="user-name" id="currentUserName">Admin User</div>
+                <div class="user-role" id="currentUserRole">Admin</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" onclick="showSection('dashboard')" class="nav-item active" data-section="dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" onclick="showSection('leads')" class="nav-item" data-section="leads">
+                <i class="fas fa-users"></i>
+                <span>Leads</span>
+            </a>
+            <a href="#" onclick="showSection('pipeline')" class="nav-item" data-section="pipeline">
+                <i class="fas fa-filter"></i>
+                <span>Pipeline</span>
+            </a>
+            <a href="#" onclick="showSection('tasks')" class="nav-item" data-section="tasks">
+                <i class="fas fa-tasks"></i>
+                <span>Tasks & Reminders</span>
+            </a>
+            <a href="#" onclick="showSection('communication')" class="nav-item" data-section="communication">
+                <i class="fas fa-comments"></i>
+                <span>Communications</span>
+            </a>
+            <a href="#" onclick="showSection('analytics')" class="nav-item" data-section="analytics">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="#" onclick="showSection('users')" class="nav-item admin-only" data-section="users">
+                <i class="fas fa-user-shield"></i>
+                <span>User Management</span>
+            </a>
+            <a href="#" onclick="showSection('settings')" class="nav-item" data-section="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+            <a href="#" onclick="showSection('activity-logs')" class="nav-item" data-section="activity-logs">
+                <i class="fas fa-history"></i>
+                <span>Activity Logs</span>
+            </a>
+            <a href="#" onclick="showSection('import-export')" class="nav-item" data-section="import-export">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Import/Export</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="btn-logout" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 id="pageTitle">Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search..." id="globalSearch">
+                </div>
+                <button class="header-btn" onclick="showNotifications()">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationBadge">3</span>
+                </button>
+                <button class="header-btn" onclick="showSection('settings')">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="content-section active">
+            <div class="section-header">
+                <h2>Dashboard Overview</h2>
+                <button class="btn btn-primary" onclick="refreshDashboard()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #667eea;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalLeads">0</div>
+                        <div class="stat-label">Total Leads</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #764ba2;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="closedDeals">0</div>
+                        <div class="stat-label">Closed Deals</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #f39c12;">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalRevenue">$0</div>
+                        <div class="stat-label">Total Revenue</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #27ae60;">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="pendingTasks">0</div>
+                        <div class="stat-label">Pending Tasks</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-line"></i> Recent Activity</h3>
+                    <div id="recentActivity" class="activity-list"></div>
+                </div>
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-calendar-check"></i> Upcoming Tasks</h3>
+                    <div id="upcomingTasks" class="task-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Leads Section -->
+        <section id="leads-section" class="content-section">
+            <div class="section-header">
+                <h2>Lead Management</h2>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" onclick="openLeadFilters()">
+                        <i class="fas fa-filter"></i> Filters
+                    </button>
+                    <button class="btn btn-primary" onclick="openAddLeadModal()">
+                        <i class="fas fa-plus"></i> Add Lead
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Company</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Value</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Pipeline Section -->
+        <section id="pipeline-section" class="content-section">
+            <div class="section-header">
+                <h2>Sales Pipeline</h2>
+                <button class="btn btn-secondary" onclick="openPipelineSettings()">
+                    <i class="fas fa-cog"></i> Manage Pipeline
+                </button>
+            </div>
+            <div class="pipeline-kanban" id="pipelineKanban"></div>
+        </section>
+
+        <!-- Tasks Section -->
+        <section id="tasks-section" class="content-section">
+            <div class="section-header">
+                <h2>Tasks & Reminders</h2>
+                <button class="btn btn-primary" onclick="openAddTaskModal()">
+                    <i class="fas fa-plus"></i> Add Task
+                </button>
+            </div>
+
+            <div class="task-filters">
+                <button class="filter-btn active" onclick="filterTasks('all')">All</button>
+                <button class="filter-btn" onclick="filterTasks('pending')">Pending</button>
+                <button class="filter-btn" onclick="filterTasks('in-progress')">In Progress</button>
+                <button class="filter-btn" onclick="filterTasks('completed')">Completed</button>
+                <button class="filter-btn" onclick="filterTasks('overdue')">Overdue</button>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Lead</th>
+                            <th>Assigned To</th>
+                            <th>Due Date</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasksTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Communication Section -->
+        <section id="communication-section" class="content-section">
+            <div class="section-header">
+                <h2>Communication Tracking</h2>
+                <div class="section-actions">
+                    <button class="btn btn-success" onclick="openSendEmailModal()">
+                        <i class="fas fa-envelope"></i> Send Email
+                    </button>
+                    <button class="btn btn-success" onclick="openSendWhatsAppModal()">
+                        <i class="fab fa-whatsapp"></i> Send WhatsApp
+                    </button>
+                    <button class="btn btn-secondary" onclick="openLogCallModal()">
+                        <i class="fas fa-phone"></i> Log Call
+                    </button>
+                    <button class="btn btn-secondary" onclick="openLogMeetingModal()">
+                        <i class="fas fa-handshake"></i> Log Meeting
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Lead</th>
+                            <th>Subject/Description</th>
+                            <th>Direction</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="communicationTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section id="analytics-section" class="content-section">
+            <div class="section-header">
+                <h2>Analytics & Reports</h2>
+                <button class="btn btn-secondary" onclick="exportAnalytics()">
+                    <i class="fas fa-download"></i> Export Report
+                </button>
+            </div>
+
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <h3><i class="fas fa-chart-pie"></i> Lead Conversion Rate</h3>
+                    <div class="chart-placeholder" id="conversionChart">
+                        <div class="chart-value">32.5%</div>
+                        <div class="chart-label">Conversion Rate</div>
+                    </div>
+                </div>
+                <div class="analytics-card">
+                    <h3><i class="fas fa-chart-bar"></i> Pipeline Analysis</h3>
+                    <div class="chart-placeholder" id="pipelineChart"></div>
+                </div>
+                <div class="analytics-card">
+                    <h3><i class="fas fa-chart-line"></i> Revenue Trend</h3>
+                    <div class="chart-placeholder" id="revenueChart"></div>
+                </div>
+                <div class="analytics-card">
+                    <h3><i class="fas fa-users"></i> Team Performance</h3>
+                    <div class="chart-placeholder" id="teamChart"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- User Management Section (Admin Only) -->
+        <section id="users-section" class="content-section admin-only">
+            <div class="section-header">
+                <h2>User Management</h2>
+                <button class="btn btn-primary" onclick="openAddUserModal()">
+                    <i class="fas fa-user-plus"></i> Add User
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Last Login</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings-section" class="content-section">
+            <div class="section-header">
+                <h2>Settings</h2>
+            </div>
+
+            <div class="settings-tabs">
+                <button class="tab-btn active" onclick="showSettingsTab('profile')">
+                    <i class="fas fa-user"></i> Profile
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('company')">
+                    <i class="fas fa-building"></i> Company
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('email')">
+                    <i class="fas fa-envelope"></i> Email Config
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('whatsapp')">
+                    <i class="fab fa-whatsapp"></i> WhatsApp Config
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('notifications')">
+                    <i class="fas fa-bell"></i> Notifications
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('customFields')">
+                    <i class="fas fa-database"></i> Custom Fields
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('backup')">
+                    <i class="fas fa-cloud-upload-alt"></i> Backup
+                </button>
+            </div>
+
+            <div class="settings-content">
+                <!-- Profile Tab -->
+                <div id="profile-tab" class="settings-tab active">
+                    <h3>Profile Settings</h3>
+                    <form id="profileForm" onsubmit="updateProfile(event)">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="profileName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="profileUsername">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="profileEmail" readonly>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </form>
+
+                    <hr>
+
+                    <h3>Change Password</h3>
+                    <form id="passwordForm" onsubmit="changePassword(event)">
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" id="currentPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" id="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Change Password</button>
+                    </form>
+
+                    <hr>
+
+                    <h3>API Key</h3>
+                    <p>Use this key to authenticate API requests</p>
+                    <div class="api-key-display">
+                        <input type="text" id="apiKeyDisplay" readonly>
+                        <button class="btn btn-secondary" onclick="copyApiKey()">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                        <button class="btn btn-warning" onclick="regenerateApiKey()">
+                            <i class="fas fa-sync"></i> Regenerate
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Company Tab -->
+                <div id="company-tab" class="settings-tab">
+                    <h3>Company Information</h3>
+                    <form id="companyForm" onsubmit="updateCompanySettings(event)">
+                        <div class="form-group">
+                            <label>Company Name</label>
+                            <input type="text" id="companyName">
+                        </div>
+                        <div class="form-group">
+                            <label>Website</label>
+                            <input type="url" id="companyWebsite">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="companyPhone">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="companyEmail">
+                        </div>
+                        <div class="form-group">
+                            <label>Address</label>
+                            <textarea id="companyAddress" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Company Info</button>
+                    </form>
+                </div>
+
+                <!-- Email Config Tab -->
+                <div id="email-tab" class="settings-tab">
+                    <h3>Email Configuration</h3>
+                    <form id="emailForm" onsubmit="updateEmailSettings(event)">
+                        <div class="form-group">
+                            <label>SMTP Host</label>
+                            <input type="text" id="smtpHost" placeholder="smtp.gmail.com">
+                        </div>
+                        <div class="form-group">
+                            <label>SMTP Port</label>
+                            <input type="number" id="smtpPort" placeholder="587">
+                        </div>
+                        <div class="form-group">
+                            <label>SMTP Username</label>
+                            <input type="text" id="smtpUsername">
+                        </div>
+                        <div class="form-group">
+                            <label>SMTP Password</label>
+                            <input type="password" id="smtpPassword">
+                        </div>
+                        <div class="form-group">
+                            <label>From Email</label>
+                            <input type="email" id="smtpFrom">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Email Config</button>
+                    </form>
+                </div>
+
+                <!-- WhatsApp Config Tab -->
+                <div id="whatsapp-tab" class="settings-tab">
+                    <h3>WhatsApp Configuration</h3>
+                    <form id="whatsappForm" onsubmit="updateWhatsAppSettings(event)">
+                        <div class="form-group">
+                            <label>API URL</label>
+                            <input type="url" id="whatsappApiUrl">
+                        </div>
+                        <div class="form-group">
+                            <label>API Key</label>
+                            <input type="text" id="whatsappApiKey">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" id="whatsappPhone">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save WhatsApp Config</button>
+                    </form>
+                </div>
+
+                <!-- Other tabs similar structure -->
+                <div id="notifications-tab" class="settings-tab">
+                    <h3>Notification Preferences</h3>
+                    <form id="notificationsForm" onsubmit="updateNotificationSettings(event)">
+                        <div class="form-check">
+                            <input type="checkbox" id="emailNotif">
+                            <label for="emailNotif">Email Notifications</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" id="taskNotif">
+                            <label for="taskNotif">Task Reminders</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" id="leadNotif">
+                            <label for="leadNotif">New Lead Notifications</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Preferences</button>
+                    </form>
+                </div>
+
+                <div id="customFields-tab" class="settings-tab">
+                    <h3>Custom Fields</h3>
+                    <p>Add custom fields to leads for your specific needs</p>
+                    <button class="btn btn-secondary" onclick="addCustomField()">
+                        <i class="fas fa-plus"></i> Add Custom Field
+                    </button>
+                    <div id="customFieldsList" class="custom-fields-list"></div>
+                </div>
+
+                <div id="backup-tab" class="settings-tab">
+                    <h3>Backup & Restore</h3>
+                    <div class="backup-info">
+                        <p><strong>Last Backup:</strong> <span id="lastBackupDate">Never</span></p>
+                        <button class="btn btn-primary" onclick="triggerBackup()">
+                            <i class="fas fa-cloud-upload-alt"></i> Backup Now
+                        </button>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="autoBackup">
+                        <label for="autoBackup">Enable Auto Backup</label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Activity Logs Section -->
+        <section id="activity-logs-section" class="content-section">
+            <div class="section-header">
+                <h2>Activity Logs</h2>
+                <div class="section-actions">
+                    <select id="activityModuleFilter" onchange="filterActivityLogs()">
+                        <option value="">All Modules</option>
+                        <option value="leads">Leads</option>
+                        <option value="users">Users</option>
+                        <option value="tasks">Tasks</option>
+                        <option value="communication">Communication</option>
+                        <option value="settings">Settings</option>
+                    </select>
+                    <input type="date" id="activityDateFilter" onchange="filterActivityLogs()">
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Module</th>
+                            <th>Description</th>
+                            <th>IP Address</th>
+                            <th>Date/Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activityLogsTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Import/Export Section -->
+        <section id="import-export-section" class="content-section">
+            <div class="section-header">
+                <h2>Import & Export Data</h2>
+            </div>
+
+            <div class="import-export-grid">
+                <div class="ie-card">
+                    <h3><i class="fas fa-file-import"></i> Import Leads</h3>
+                    <p>Upload a CSV file to import leads</p>
+                    <form id="importForm" onsubmit="importLeads(event)">
+                        <input type="file" id="importFile" accept=".csv" required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Import
+                        </button>
+                    </form>
+                </div>
+
+                <div class="ie-card">
+                    <h3><i class="fas fa-file-export"></i> Export Leads</h3>
+                    <p>Download all leads as CSV</p>
+                    <button class="btn btn-success" onclick="exportLeads()">
+                        <i class="fas fa-download"></i> Export Leads
+                    </button>
+                </div>
+
+                <div class="ie-card">
+                    <h3><i class="fas fa-chart-bar"></i> Export Analytics</h3>
+                    <p>Download analytics report</p>
+                    <button class="btn btn-success" onclick="exportAnalyticsData()">
+                        <i class="fas fa-download"></i> Export Analytics
+                    </button>
+                </div>
+
+                <div class="ie-card">
+                    <h3><i class="fas fa-history"></i> Export Activity Logs</h3>
+                    <p>Download activity history</p>
+                    <button class="btn btn-success" onclick="exportActivityLogs()">
+                        <i class="fas fa-download"></i> Export Logs
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modals will be dynamically created in JavaScript -->
+    <div id="modalContainer"></div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>Login to CRM</h2>
+            <form id="loginForm" onsubmit="login(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Login</button>
+                <p class="text-center mt-20">
+                    Don't have an account? <a href="#" onclick="showRegister()">Register</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <h2>Register New Account</h2>
+            <form id="registerForm" onsubmit="register(event)">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="registerName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="registerPassword" required minlength="6">
+                    <small style="color: #7f8c8d;">Minimum 6 characters</small>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="registerConfirmPassword" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Register</button>
+                <p class="text-center mt-20">
+                    Already have an account? <a href="#" onclick="showLogin()">Login</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
