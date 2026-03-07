@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Professional CRM Dashboard 2024</title>
+    <link rel="stylesheet" href="/dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-chart-line"></i>
+            <span class="sidebar-title">CRM System</span>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="user-profile">
+            <div class="user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="user-info">
+                <div class="user-name" id="currentUserName">Admin User</div>
+                <div class="user-role" id="currentUserRole">Admin</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" onclick="showSection('dashboard')" class="nav-item active" data-section="dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" onclick="showSection('leads')" class="nav-item sales-only" data-section="leads">
+                <i class="fas fa-users"></i>
+                <span>Leads</span>
+            </a>
+            <a href="#" onclick="showSection('pipeline')" class="nav-item" data-section="pipeline">
+                <i class="fas fa-filter"></i>
+                <span>Pipeline</span>
+            </a>
+            <a href="#" onclick="showSection('tasks')" class="nav-item" data-section="tasks">
+                <i class="fas fa-tasks"></i>
+                <span>Tasks & Reminders</span>
+            </a>
+            <a href="#" onclick="showSection('communication')" class="nav-item" data-section="communication">
+                <i class="fas fa-comments"></i>
+                <span>Communications</span>
+            </a>
+            <a href="#" onclick="showSection('analytics')" class="nav-item" data-section="analytics">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="#" onclick="showSection('users')" class="nav-item superadmin-admin-only" data-section="users">
+                <i class="fas fa-user-shield"></i>
+                <span>User Management</span>
+            </a>
+            <a href="#" onclick="showSection('settings')" class="nav-item" data-section="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+            <a href="#" onclick="showSection('activity-logs')" class="nav-item" data-section="activity-logs">
+                <i class="fas fa-history"></i>
+                <span>Activity Logs</span>
+            </a>
+            <a href="#" onclick="showSection('import-export')" class="nav-item" data-section="import-export">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Import/Export</span>
+            </a>
+            <a href="#" onclick="showSection('invoices')" class="nav-item superadmin-admin-only" data-section="invoices">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Invoices</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="btn-logout" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Sidebar overlay (tap to close on mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 id="pageTitle">Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search..." id="globalSearch">
+                </div>
+                <button class="header-btn" onclick="showNotifications()">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationBadge">3</span>
+                </button>
+                <button class="header-btn" onclick="showSection('settings')">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="content-section active">
+            <div class="section-header">
+                <h2>Dashboard Overview</h2>
+                <button class="btn btn-primary" onclick="refreshDashboard()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #667eea;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalLeads">0</div>
+                        <div class="stat-label">Total Leads</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #764ba2;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="closedDeals">0</div>
+                        <div class="stat-label">Closed Deals</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #27ae60;">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="pendingTasks">0</div>
+                        <div class="stat-label">Pending Tasks</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-line"></i> Recent Activity</h3>
+                    <div id="recentActivity" class="activity-list"></div>
+                </div>
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-calendar-check"></i> Upcoming Tasks</h3>
+                    <div id="upcomingTasks" class="task-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Leads Section -->
+        <section id="leads-section" class="content-section">
+            <div class="section-header">
+                <h2>Lead Management</h2>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" onclick="openLeadFilters()">
+                        <i class="fas fa-filter"></i> Filters
+                    </button>
+                    <button class="btn btn-primary" onclick="openAddLeadModal()">
+                        <i class="fas fa-plus"></i> Add Lead
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Company Name</th>
+                            <th>Contact Person</th>
+                            <th>Email</th>
+                            <th>Mobile</th>
+                            <th>Assigned To</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Pipeline Section -->
+        <section id="pipeline-section" class="content-section">
+            <div class="section-header">
+                <h2>Pipeline</h2>
+                <button class="btn btn-secondary" onclick="openPipelineSettings()">
+                    <i class="fas fa-cog"></i> Manage Pipeline
+                </button>
+            </div>
+            <div class="pipeline-kanban" id="pipelineKanban"></div>
+        </section>
+
+        <!-- Tasks Section -->
+        <section id="tasks-section" class="content-section">
+            <div class="section-header">
+                <h2>Tasks & Reminders</h2>
+                <button class="btn btn-primary" onclick="openAddTaskModal()">
+                    <i class="fas fa-plus"></i> Add Task
+                </button>
+            </div>
+
+            <div class="task-filters">
+                <button class="filter-btn active" onclick="filterTasks('all')">All</button>
+                <button class="filter-btn" onclick="filterTasks('pending')">Pending</button>
+                <button class="filter-btn" onclick="filterTasks('in-progress')">In Progress</button>
+                <button class="filter-btn" onclick="filterTasks('completed')">Completed</button>
+                <button class="filter-btn" onclick="filterTasks('overdue')">Overdue</button>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Lead</th>
+                            <th>Assigned To</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasksTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Communication Section -->
+        <section id="communication-section" class="content-section">
+            <div class="section-header">
+                <h2>Communication Tracking</h2>
+                <div class="section-actions">
+                    <select id="commLeadSelect"
+                        style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; margin-right: 12px; min-width: 200px;">
+                        <option value="">Select Lead...</option>
+                    </select>
+                    <button class="btn btn-success" onclick="openSendEmailModalWithLeadSelect()">
+                        <i class="fas fa-envelope"></i> Send Email
+                    </button>
+                    <button class="btn btn-success" onclick="openSendWhatsAppModalWithLeadSelect()">
+                        <i class="fab fa-whatsapp"></i> Send WhatsApp
+                    </button>
+                    <button class="btn btn-secondary" onclick="openLogCallModalWithLeadSelect()">
+                        <i class="fas fa-phone"></i> Log Call
+                    </button>
+                    <button class="btn btn-secondary" onclick="openLogMeetingModalWithLeadSelect()">
+                        <i class="fas fa-handshake"></i> Log Meeting
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Lead</th>
+                            <th>Subject/Description</th>
+                            <th>Direction</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="communicationTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section id="analytics-section" class="content-section">
+            <div class="section-header">
+                <h2>Analytics & Reports</h2>
+                <button class="btn btn-secondary" onclick="exportAnalytics()">
+                    <i class="fas fa-download"></i> Export Report
+                </button>
+            </div>
+
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <h3><i class="fas fa-chart-pie"></i> Lead Conversion Rate</h3>
+                    <div class="chart-placeholder" id="conversionChart">
+                        <div class="chart-value">32.5%</div>
+                        <div class="chart-label">Conversion Rate</div>
+                    </div>
+                </div>
+                <div class="analytics-card">
+                    <h3><i class="fas fa-chart-bar"></i> Pipeline Analysis</h3>
+                    <div class="chart-placeholder" id="pipelineChart"></div>
+                </div>
+                <div class="analytics-card">
+                    <h3><i class="fas fa-users"></i> Team Performance</h3>
+                    <div class="chart-placeholder" id="teamChart"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- User Management Section (Admin and Manager) -->
+        <section id="users-section" class="content-section admin-manager-only">
+            <div class="section-header">
+                <h2>User Management</h2>
+                <button class="btn btn-primary" onclick="openAddUserModal()">
+                    <i class="fas fa-user-plus"></i> Add User
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Last Login</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings-section" class="content-section">
+            <div class="section-header">
+                <h2>Settings</h2>
+            </div>
+
+            <div class="settings-tabs">
+                <button class="tab-btn active" onclick="showSettingsTab('profile')">
+                    <i class="fas fa-user"></i> Profile
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('company')">
+                    <i class="fas fa-building"></i> Company
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('email')">
+                    <i class="fas fa-envelope"></i> Email Config
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('whatsapp')">
+                    <i class="fab fa-whatsapp"></i> WhatsApp Config
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('notifications')">
+                    <i class="fas fa-bell"></i> Notifications
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('customFields')">
+                    <i class="fas fa-database"></i> Custom Fields
+                </button>
+                <button class="tab-btn" onclick="showSettingsTab('backup')">
+                    <i class="fas fa-cloud-upload-alt"></i> Backup
+                </button>
+            </div>
+
+            <div class="settings-content">
+                <!-- Profile Tab -->
+                <div id="profile-tab" class="settings-tab active">
+                    <h3>Profile Settings</h3>
+                    <form id="profileForm" onsubmit="updateProfile(event)">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="profileName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="profileUsername">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="profileEmail" readonly>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </form>
+
+                    <hr>
+
+                    <h3>Change Password</h3>
+                    <form id="passwordForm" onsubmit="changePassword(event)">
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" id="currentPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" id="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Change Password</button>
+                    </form>
+
+                    <hr>
+
+                    <h3>API Key</h3>
+                    <p>Use this key to authenticate API requests</p>
+                    <div class="api-key-display">
+                        <input type="text" id="apiKeyDisplay" readonly>
+                        <button class="btn btn-secondary" onclick="copyApiKey()">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                        <button class="btn btn-warning" onclick="regenerateApiKey()">
+                            <i class="fas fa-sync"></i> Regenerate
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Company Tab -->
+                <div id="company-tab" class="settings-tab">
+                    <h3>Company Information</h3>
+                    <form id="companyForm" onsubmit="updateCompanySettings(event)">
+                        <div class="form-group">
+                            <label>Company Name</label>
+                            <input type="text" id="companyName">
+                        </div>
+                        <div class="form-group">
+                            <label>Website</label>
+                            <input type="url" id="companyWebsite">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="companyPhone">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="companyEmail">
+                        </div>
+                        <div class="form-group">
+                            <label>Address</label>
+                            <textarea id="companyAddress" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Company Info</button>
+                    </form>
+                </div>
+
+                <!-- Email Config Tab -->
+                <div id="email-tab" class="settings-tab">
+                    <h3>Email Configuration - Outlook/Office 365</h3>
+                    <p class="text-muted">Configure your personal Outlook email to send emails from the CRM</p>
+
+                    <div id="emailConfigStatus" class="alert alert-info" style="display: none; margin-bottom: 20px;">
+                        <i class="fas fa-info-circle"></i> <span id="emailStatusText"></span>
+                    </div>
+
+                    <form id="emailForm" onsubmit="saveEmailConfig(event)">
+                        <div class="form-group">
+                            <label>Outlook Email Address *</label>
+                            <input type="email" id="outlookEmail" placeholder="your-email@outlook.com" required>
+                            <small class="text-muted">Works with @outlook.com, @hotmail.com, or Office 365
+                                accounts</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Outlook Password *</label>
+                            <input type="password" id="outlookPassword" placeholder="Your Outlook password" required>
+                            <small class="text-muted">For Office 365 with 2FA, use an App Password</small>
+                        </div>
+                        <div class="form-actions" style="display: flex; gap: 10px;">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save & Verify
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="testEmailConfig()">
+                                <i class="fas fa-paper-plane"></i> Send Test Email
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="removeEmailConfig()"
+                                style="margin-left: auto;">
+                                <i class="fas fa-trash"></i> Remove Config
+                            </button>
+                        </div>
+                    </form>
+
+                    <div style="margin-top: 30px; padding: 15px; background: #f9f9f9; border-radius: 5px;">
+                        <h4>Setup Instructions:</h4>
+                        <ol style="margin: 10px 0; padding-left: 20px;">
+                            <li>Enter your Outlook/Office 365 email address</li>
+                            <li>Enter your password (or App Password if 2FA is enabled)</li>
+                            <li>Click "Save & Verify" to test the connection</li>
+                            <li>Once verified, you can send emails from the CRM</li>
+                        </ol>
+                        <p style="margin-top: 15px;"><strong>For Office 365 with Two-Factor Authentication:</strong></p>
+                        <ul style="margin: 5px 0; padding-left: 20px;">
+                            <li>Go to <a href="https://account.microsoft.com/security" target="_blank">Microsoft
+                                    Security</a></li>
+                            <li>Select "Advanced security options"</li>
+                            <li>Under "App passwords", create a new one</li>
+                            <li>Use that App Password here instead of your regular password</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- WhatsApp Config Tab -->
+                <div id="whatsapp-tab" class="settings-tab">
+                    <h3>WhatsApp Configuration</h3>
+                    <form id="whatsappForm" onsubmit="updateWhatsAppSettings(event)">
+                        <div class="form-group">
+                            <label>API URL</label>
+                            <input type="url" id="whatsappApiUrl">
+                        </div>
+                        <div class="form-group">
+                            <label>API Key</label>
+                            <input type="text" id="whatsappApiKey">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" id="whatsappPhone">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save WhatsApp Config</button>
+                    </form>
+                </div>
+
+                <!-- Other tabs similar structure -->
+                <div id="notifications-tab" class="settings-tab">
+                    <h3>Notification Preferences</h3>
+                    <form id="notificationsForm" onsubmit="updateNotificationSettings(event)">
+                        <div class="form-check">
+                            <input type="checkbox" id="emailNotif">
+                            <label for="emailNotif">Email Notifications</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" id="taskNotif">
+                            <label for="taskNotif">Task Reminders</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" id="leadNotif">
+                            <label for="leadNotif">New Lead Notifications</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Preferences</button>
+                    </form>
+                </div>
+
+                <div id="customFields-tab" class="settings-tab">
+                    <h3>Custom Fields</h3>
+                    <p>Add custom fields to leads for your specific needs</p>
+                    <button class="btn btn-secondary" onclick="addCustomField()">
+                        <i class="fas fa-plus"></i> Add Custom Field
+                    </button>
+                    <div id="customFieldsList" class="custom-fields-list"></div>
+                </div>
+
+                <div id="backup-tab" class="settings-tab">
+                    <h3>Backup & Restore</h3>
+                    <div class="backup-info">
+                        <p><strong>Last Backup:</strong> <span id="lastBackupDate">Never</span></p>
+                        <button class="btn btn-primary" onclick="triggerBackup()">
+                            <i class="fas fa-cloud-upload-alt"></i> Backup Now
+                        </button>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="autoBackup">
+                        <label for="autoBackup">Enable Auto Backup</label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Activity Logs Section -->
+        <section id="activity-logs-section" class="content-section">
+            <div class="section-header">
+                <h2>Activity Logs</h2>
+                <div class="section-actions">
+                    <select id="activityModuleFilter" onchange="filterActivityLogs()">
+                        <option value="">All Modules</option>
+                        <option value="leads">Leads</option>
+                        <option value="users">Users</option>
+                        <option value="tasks">Tasks</option>
+                        <option value="communication">Communication</option>
+                        <option value="settings">Settings</option>
+                    </select>
+                    <input type="date" id="activityDateFilter" onchange="filterActivityLogs()">
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Module</th>
+                            <th>Description</th>
+                            <th>IP Address</th>
+                            <th>Date/Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activityLogsTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Import/Export Section -->
+        <section id="import-export-section" class="content-section">
+            <div class="section-header">
+                <h2>Import & Export Data</h2>
+            </div>
+
+            <div class="import-export-grid">
+                <div class="ie-card">
+                    <h3><i class="fas fa-file-export"></i> Export Leads</h3>
+                    <p>Download all leads as CSV</p>
+                    <button class="btn btn-success" onclick="exportLeads()">
+                        <i class="fas fa-download"></i> Export Leads
+                    </button>
+                </div>
+
+                <div class="ie-card">
+                    <h3><i class="fas fa-chart-bar"></i> Export Analytics</h3>
+                    <p>Download analytics report</p>
+                    <button class="btn btn-success" onclick="exportAnalyticsData()">
+                        <i class="fas fa-download"></i> Export Analytics
+                    </button>
+                </div>
+
+                <div class="ie-card">
+                    <h3><i class="fas fa-history"></i> Export Activity Logs</h3>
+                    <p>Download activity history</p>
+                    <button class="btn btn-success" onclick="exportActivityLogs()">
+                        <i class="fas fa-download"></i> Export Logs
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- Invoices Section                           -->
+        <!-- ═══════════════════════════════════════════ -->
+        <section id="invoices-section" class="content-section superadmin-admin-only">
+            <div class="section-header">
+                <h2>Invoices</h2>
+                <div class="header-actions" style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary" onclick="showInvoiceTab('customers')">
+                        <i class="fas fa-building"></i> Manage Customers
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="stats-grid" id="invoiceStatsGrid" style="margin-bottom:18px;">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#e8f0fe"><i class="fas fa-file-invoice" style="color:#003087"></i></div>
+                    <div class="stat-info"><div class="stat-number" id="invStatTotal">—</div><div class="stat-label">Total Invoices</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#e6f4ea"><i class="fas fa-check-circle" style="color:#2e7d32"></i></div>
+                    <div class="stat-info"><div class="stat-number" id="invStatPaid">—</div><div class="stat-label">Paid</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#fff3e0"><i class="fas fa-clock" style="color:#ef6c00"></i></div>
+                    <div class="stat-info"><div class="stat-number" id="invStatUnpaid">—</div><div class="stat-label">Unpaid</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#fce8e8"><i class="fas fa-exclamation-triangle" style="color:#c62828"></i></div>
+                    <div class="stat-info"><div class="stat-number" id="invStatOverdue">—</div><div class="stat-label">Overdue</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#f3e5f5"><i class="fas fa-rupee-sign" style="color:#6a1b9a"></i></div>
+                    <div class="stat-info"><div class="stat-number" id="invStatValue">—</div><div class="stat-label">Total Value</div></div>
+                </div>
+            </div>
+
+            <!-- Tab switcher: Invoices | Customers | Companies -->
+            <div class="invoice-tabs" id="invoiceTabNav" style="display:flex;gap:0;margin-bottom:12px;border-bottom:2px solid #e0e0e0;">
+                <button id="invTabBtnInvoices" onclick="showInvoiceTab('list')" style="padding:8px 20px;border:none;background:none;font-weight:bold;color:#003087;border-bottom:3px solid #003087;cursor:pointer;">Invoices</button>
+                <button id="invTabBtnCustomers" onclick="showInvoiceTab('customers')" style="padding:8px 20px;border:none;background:none;color:#666;cursor:pointer;">Customers</button>
+                <button id="invTabBtnCompanies" onclick="showInvoiceTab('companies')" style="padding:8px 20px;border:none;background:none;color:#666;cursor:pointer;">My Companies</button>
+            </div>
+
+            <!-- Invoice List -->
+            <div id="invoiceListTab">
+                <!-- Filters -->
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                    <input type="text" id="invSearch" placeholder="Search invoice / customer / candidate..." class="form-control" style="width:260px;" oninput="loadInvoices()">
+                    <select id="invFilterStatus" class="form-control" style="width:150px;" onchange="loadInvoices()">
+                        <option value="">All Statuses</option>
+                        <option value="unpaid">Unpaid</option>
+                        <option value="paid">Paid</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="partial">Partial</option>
+                    </select>
+                    <input type="date" id="invFilterFrom" class="form-control" style="width:150px;" onchange="loadInvoices()" placeholder="From">
+                    <input type="date" id="invFilterTo" class="form-control" style="width:150px;" onchange="loadInvoices()" placeholder="To">
+                    <button class="btn btn-secondary" onclick="clearInvoiceFilters()"><i class="fas fa-times"></i> Clear</button>
+                    <button class="btn btn-primary" onclick="openCreateInvoiceModal()"><i class="fas fa-plus"></i> New Invoice</button>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice No</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Candidates</th>
+                                <th>Chargeable Amt (₹)</th>
+                                <th>Net Payable (₹)</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceTableBody">
+                            <tr><td colspan="9" style="text-align:center;padding:20px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Customer List -->
+            <div id="invoiceCustomersTab" style="display:none;">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                    <button class="btn btn-primary" onclick="openCreateCustomerModal()">
+                        <i class="fas fa-plus"></i> Add Customer
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Customer ID</th>
+                                <th>Name</th>
+                                <th>GST No</th>
+                                <th>Contact</th>
+                                <th>Email</th>
+                                <th>Vendor Code</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceCustomersTableBody">
+                            <tr><td colspan="7" style="text-align:center;padding:20px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- My Companies List -->
+            <div id="invoiceCompaniesTab" style="display:none;">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                    <button class="btn btn-primary" onclick="openCreateBillingCompanyModal()">
+                        <i class="fas fa-plus"></i> Add Company
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Company Name</th>
+                                <th>Tagline / SAC</th>
+                                <th>PAN</th>
+                                <th>GSTN</th>
+                                <th>Bank</th>
+                                <th>Primary</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceCompaniesTableBody">
+                            <tr><td colspan="7" style="text-align:center;padding:20px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ═══════ Invoice Modals ═══════ -->
+
+    <!-- Create/Edit Invoice Modal -->
+    <div id="invoiceModal" class="modal" style="display:none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="invoiceModalTitle">New Invoice</h2>
+                <button class="modal-close" onclick="closeInvoiceModal()">&times;</button>
+            </div>
+            <form id="invoiceForm" onsubmit="handleSaveInvoice(event)">
+                <input type="hidden" id="invoiceEditId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Invoice Number *</label>
+                        <input type="text" id="invNo" name="invoiceNumber" required placeholder="e.g. KMC/2526/001">
+                    </div>
+                    <div class="form-group">
+                        <label>Invoice Date *</label>
+                        <input type="date" id="invDate" name="invoiceDate" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Billing Company *</label>
+                        <select id="invBillingCompany" name="billingCompanyId" required>
+                            <option value="">Select Company</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Customer *</label>
+                        <select id="invCustomer" name="customerId" required onchange="onInvoiceCustomerChange()">
+                            <option value="">Select Customer</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Service Type *</label>
+                        <select id="invServiceType" name="serviceType">
+                            <option value="sourcing">Sourcing, Recruiting & Onboarding</option>
+                            <option value="assessment">Assessment Center Based Recommendation</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Dept Code</label>
+                        <input type="text" id="invDeptCode" name="deptCode" value="NA">
+                    </div>
+                    <div class="form-group">
+                        <label>PO ID</label>
+                        <input type="text" id="invPoId" name="poId" placeholder="Optional">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Chargeable Salary (₹) *</label>
+                        <input type="number" id="invSalary" name="chargeableSalary" min="0" step="0.01" required oninput="recalcInvoice()">
+                    </div>
+                    <div class="form-group">
+                        <label>Rate (%) *</label>
+                        <input type="number" id="invRate" name="rate" min="0" max="100" step="0.01" required placeholder="e.g. 8.33" oninput="recalcInvoice()">
+                    </div>
+                </div>
+
+                <!-- Live calc preview -->
+                <div id="invCalcPreview" style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:12px;margin-bottom:12px;display:none;">
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;">
+                        <span>Chargeable Amt: <strong id="prevChargeAmt">₹0</strong></span>
+                        <span id="prevTaxLabel">Tax: <strong id="prevTax">₹0</strong></span>
+                        <span>Total: <strong id="prevTotal">₹0</strong></span>
+                        <span>Net Payable: <strong id="prevNet" style="color:#003087;">₹0</strong></span>
+                    </div>
+                </div>
+
+                <!-- Candidates -->
+                <div style="margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid #e8f0fe;">
+                        <div>
+                            <span style="font-weight:700;font-size:14px;color:#003087;">Candidates</span>
+                            <span style="font-size:11px;color:#999;margin-left:8px;">Placed candidates to be billed</span>
+                        </div>
+                        <button type="button" onclick="addCandidateRow()"
+                            style="background:#003087;color:white;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.2s;"
+                            onmouseover="this.style.background='#0044bb';" onmouseout="this.style.background='#003087';">
+                            <i class="fas fa-user-plus"></i> Add Candidate
+                        </button>
+                    </div>
+                    <div id="candidateRowsContainer">
+                        <!-- rows added dynamically -->
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Payment Status</label>
+                        <select id="invPayStatus" name="paymentStatus">
+                            <option value="unpaid">Unpaid</option>
+                            <option value="paid">Paid</option>
+                            <option value="partial">Partial</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Received Date</label>
+                        <input type="date" id="invReceivedDate" name="receivedDate">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Receivable Amount (₹)</label>
+                        <input type="number" id="invReceivable" name="receivableAmount" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>TDS Amount (₹)</label>
+                        <input type="number" id="invTds" name="tdsAmount" min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="invNotes" name="notes" rows="2" placeholder="Internal notes..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Invoice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Invoice Modal -->
+    <div id="viewInvoiceModal" class="modal" style="display:none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Invoice Details</h2>
+                <button class="modal-close" onclick="closeViewInvoiceModal()">&times;</button>
+            </div>
+            <div id="viewInvoiceContent" style="padding:0 20px 10px;"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeViewInvoiceModal()">Close</button>
+                <button class="btn btn-primary" id="viewInvPdfBtn" onclick=""><i class="fas fa-file-pdf"></i> Download PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Customer Modal -->
+    <div id="invoiceCustomerModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="custModalTitle">Add Customer</h2>
+                <button class="modal-close" onclick="closeCustomerModal()">&times;</button>
+            </div>
+            <form id="invoiceCustomerForm" onsubmit="handleSaveCustomer(event)">
+                <input type="hidden" id="custEditId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Customer ID *</label>
+                        <input type="text" id="custId" required placeholder="e.g. KNPL">
+                    </div>
+                    <div class="form-group">
+                        <label>Name *</label>
+                        <input type="text" id="custName" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea id="custAddress" rows="2"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Contact No</label>
+                        <input type="text" id="custContact">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="custEmail">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>GST No</label>
+                        <input type="text" id="custGst" placeholder="e.g. 27AAACG1376N1ZC">
+                    </div>
+                    <div class="form-group">
+                        <label>Vendor Code</label>
+                        <input type="text" id="custVendor" value="NA">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeCustomerModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create/Edit Billing Company Modal -->
+    <div id="billingCompanyModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="bcoModalTitle">Add Company</h2>
+                <button class="modal-close" onclick="closeBillingCompanyModal()">&times;</button>
+            </div>
+            <form id="billingCompanyForm" onsubmit="handleSaveBillingCompany(event)">
+                <input type="hidden" id="bcoEditId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Company Name *</label>
+                        <input type="text" id="bcoName" required placeholder="e.g. Ken McCoy Consulting">
+                    </div>
+                    <div class="form-group">
+                        <label>Tagline</label>
+                        <input type="text" id="bcoTagline" placeholder="Sourcing · Recruiting · Onboarding">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>SAC Code</label>
+                        <input type="text" id="bcoSacCode" placeholder="998516">
+                    </div>
+                    <div class="form-group">
+                        <label>PAN Number</label>
+                        <input type="text" id="bcoPan" placeholder="e.g. AADCK1234P">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Account Name</label>
+                        <input type="text" id="bcoAccountName" placeholder="Name on bank account">
+                    </div>
+                    <div class="form-group">
+                        <label>Bank Name</label>
+                        <input type="text" id="bcoBankName" placeholder="e.g. HDFC Bank">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Branch</label>
+                        <input type="text" id="bcoBranchName" placeholder="e.g. Andheri West">
+                    </div>
+                    <div class="form-group">
+                        <label>CA / Account Number</label>
+                        <input type="text" id="bcoCaNumber">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>GSTN</label>
+                    <input type="text" id="bcoGstn" placeholder="e.g. 27AADCK1234P1ZC">
+                </div>
+                <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+                    <input type="checkbox" id="bcoIsPrimary" style="width:18px;height:18px;cursor:pointer;">
+                    <label for="bcoIsPrimary" style="margin:0;cursor:pointer;">Set as Primary Company (pre-selected on new invoices)</label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeBillingCompanyModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Company</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modals will be dynamically created in JavaScript -->
+    <div id="modalContainer"></div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>Login to CRM</h2>
+            <form id="loginForm" onsubmit="login(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Login</button>
+                <p class="text-center mt-20" style="color: #7f8c8d; font-size: 0.9em;">
+                    Contact your administrator to get access
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notifications Dropdown -->
+    <div id="notificationsPanel" class="notifications-panel" style="display: none;">
+        <div class="notifications-header">
+            <h3>Notifications</h3>
+            <button class="btn-text" onclick="markAllNotificationsRead()">Mark all read</button>
+        </div>
+        <div id="notificationsList" class="notifications-list">
+            <div class="notification-empty">
+                <i class="fas fa-bell-slash"></i>
+                <p>No notifications</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Lead Modal -->
+    <div id="addLeadModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Add New Lead</h2>
+                <button class="modal-close" onclick="closeAddLeadModal()">&times;</button>
+            </div>
+            <form id="addLeadForm" onsubmit="handleAddLead(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Company Name *</label>
+                        <input type="text" name="companyName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Person</label>
+                        <input type="text" name="contactPerson">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Mobile</label>
+                        <input type="tel" name="mobile">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea name="address" rows="1"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status">
+                            <option value="new">New</option>
+                            <option value="work-in-progress">Work-in-Progress</option>
+                            <option value="test-assignment">Test Assignment</option>
+                            <option value="won">Won</option>
+                            <option value="lost">Lost</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Assigned To *</label>
+                        <select name="assignedTo" id="leadAssignedTo" required>
+                            <option value="">Select User</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Remarks</label>
+                    <textarea name="remarks" rows="2"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddLeadModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Lead</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Lead Modal -->
+    <div id="editLeadModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Edit Lead</h2>
+                <button class="modal-close" onclick="closeEditLeadModal()">&times;</button>
+            </div>
+            <form id="editLeadForm" onsubmit="handleEditLead(event)">
+                <input type="hidden" id="editLeadId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Company Name *</label>
+                        <input type="text" id="editLeadCompanyName" name="companyName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Person</label>
+                        <input type="text" id="editLeadContactPerson" name="contactPerson">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="editLeadEmail" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Mobile</label>
+                        <input type="tel" id="editLeadMobile" name="mobile">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea id="editLeadAddress" name="address" rows="1"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="editLeadStatus" name="status">
+                            <option value="new">New</option>
+                            <option value="work-in-progress">Work-in-Progress</option>
+                            <option value="test-assignment">Test Assignment</option>
+                            <option value="won">Won</option>
+                            <option value="lost">Lost</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Assigned To *</label>
+                        <select id="editLeadAssignedTo" name="assignedTo" required>
+                            <option value="">Select User</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Remarks</label>
+                    <textarea id="editLeadRemarks" name="remarks" rows="2"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditLeadModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Lead</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Lead Modal -->
+    <div id="viewLeadModal" class="modal">
+        <div class="modal-content modal-short">
+            <div class="modal-header">
+                <h2>Lead Details</h2>
+                <button class="modal-close" onclick="closeViewLeadModal()">&times;</button>
+            </div>
+            <div id="viewLeadContent" class="lead-details-content"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeViewLeadModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Communication Modal -->
+    <div id="viewCommunicationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Communication Details</h2>
+                <button class="modal-close" onclick="closeViewCommunicationModal()">&times;</button>
+            </div>
+            <div id="viewCommunicationContent" class="lead-details-content"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeViewCommunicationModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="addTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Task</h2>
+                <button class="modal-close" onclick="closeAddTaskModal()">&times;</button>
+            </div>
+            <form id="addTaskForm" onsubmit="handleAddTask(event)">
+                <div class="form-group">
+                    <label>Lead *</label>
+                    <select name="lead" id="taskLead" required>
+                        <option value="">Select Lead</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Action Type *</label>
+                    <select name="action" required>
+                        <option value="">Select Action</option>
+                        <option value="call">Call</option>
+                        <option value="email">Email</option>
+                        <option value="meeting">Meeting</option>
+                        <option value="follow-up">Follow-up</option>
+                        <option value="demo">Demo</option>
+                        <option value="site-visit">Site Visit</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Remarks</label>
+                    <textarea name="remarks" rows="2" placeholder="Additional notes..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Due Date *</label>
+                        <input type="datetime-local" name="dueDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Assigned To *</label>
+                    <select name="assignedTo" id="taskAssignedTo" required>
+                        <option value="">Select User</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddTaskModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Operation Modal -->
+    <div id="addOperationModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Add New Operation Ticket</h2>
+                <button class="modal-close" onclick="closeAddOperationModal()">&times;</button>
+            </div>
+            <form id="addOperationForm" onsubmit="handleAddOperation(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Client Name *</label>
+                        <input type="text" name="clientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Company *</label>
+                        <input type="text" name="company" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" name="phone">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select name="category" required>
+                            <option value="support">Support</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="installation">Installation</option>
+                            <option value="complaint">Complaint</option>
+                            <option value="query">Query</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status">
+                            <option value="new-request" selected>New Request</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="pending-parts">Pending Parts</option>
+                            <option value="completed">Completed</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Source</label>
+                        <select name="source">
+                            <option value="phone">Phone</option>
+                            <option value="email">Email</option>
+                            <option value="website">Website</option>
+                            <option value="chat">Chat</option>
+                            <option value="walk-in">Walk-in</option>
+                            <option value="referral">Referral</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Estimated Time (hours)</label>
+                        <input type="number" name="estimatedTime" min="0" step="0.5" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Assigned To</label>
+                        <select name="assignedTo" id="operationAssignedTo">
+                            <option value="">Unassigned</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" rows="2" placeholder="Describe the issue or request..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddOperationModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Operation Modal -->
+    <div id="editOperationModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Edit Operation Ticket</h2>
+                <button class="modal-close" onclick="closeEditOperationModal()">&times;</button>
+            </div>
+            <form id="editOperationForm" onsubmit="handleEditOperation(event)">
+                <input type="hidden" id="editOperationId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ticket Number</label>
+                        <input type="text" id="editOperationTicket" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>Client Name *</label>
+                        <input type="text" id="editOperationClientName" name="clientName" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Company *</label>
+                        <input type="text" id="editOperationCompany" name="company" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" id="editOperationEmail" name="email" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="editOperationPhone" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select id="editOperationCategory" name="category" required>
+                            <option value="support">Support</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="installation">Installation</option>
+                            <option value="complaint">Complaint</option>
+                            <option value="query">Query</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select id="editOperationPriority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="editOperationStatus" name="status">
+                            <option value="new-request">New Request</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="pending-parts">Pending Parts</option>
+                            <option value="completed">Completed</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Estimated Time (hours)</label>
+                        <input type="number" id="editOperationEstimatedTime" name="estimatedTime" min="0" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Actual Time (hours)</label>
+                        <input type="number" id="editOperationActualTime" name="actualTime" min="0" step="0.5">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Assigned To</label>
+                    <select id="editOperationAssignedTo" name="assignedTo">
+                        <option value="">Unassigned</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="editOperationDescription" name="description" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Resolution</label>
+                    <textarea id="editOperationResolution" name="resolution" rows="2"
+                        placeholder="Add resolution notes..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditOperationModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Operation Modal -->
+    <div id="viewOperationModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Operation Ticket Details</h2>
+                <button class="modal-close" onclick="closeViewOperationModal()">&times;</button>
+            </div>
+            <div id="viewOperationContent" class="view-details"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeViewOperationModal()">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editOperationFromView()">Edit Ticket</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pipeline Settings Modal -->
+    <div id="pipelineSettingsModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Manage Pipeline Stages</h2>
+                <button class="modal-close" onclick="closePipelineSettings()">&times;</button>
+            </div>
+            <div class="pipeline-manager">
+                <button class="btn btn-primary mb-20" onclick="addPipelineStage()">
+                    <i class="fas fa-plus"></i> Add Stage
+                </button>
+                <div id="pipelineStagesList" class="pipeline-stages-list"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePipelineSettings()">Close</button>
+                <button class="btn btn-primary" onclick="savePipelineSettings()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operations Pipeline Settings Modal -->
+    <div id="operationsPipelineSettingsModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Manage Operations Pipeline Stages</h2>
+                <button class="modal-close" onclick="closeOperationsPipelineSettings()">&times;</button>
+            </div>
+            <div class="pipeline-manager">
+                <button class="btn btn-primary mb-20" onclick="addOperationsStage()">
+                    <i class="fas fa-plus"></i> Add Stage
+                </button>
+                <div id="operationsPipelineStagesList" class="pipeline-stages-list"></div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeOperationsPipelineSettings()">Close</button>
+        <button class="btn btn-primary" onclick="saveOperationsPipelineSettings()">Save Changes</button>
+    </div>
+    </div>
+    </div>
+
+    <!-- View Task Modal -->
+    <div id="viewTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Task Details</h2>
+                <button class="modal-close" onclick="closeViewTaskModal()">&times;</button>
+            </div>
+            <div id="viewTaskContent" class="lead-details-content"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeViewTaskModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div id="editTaskModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Edit Task</h2>
+                <button class="modal-close" onclick="closeEditTaskModal()">&times;</button>
+            </div>
+            <form id="editTaskForm" onsubmit="handleEditTask(event)">
+                <input type="hidden" id="editTaskId">
+                <div class="form-group">
+                    <label>Action Type *</label>
+                    <select id="editTaskAction" name="action" required>
+                        <option value="">Select Action</option>
+                        <option value="call">Call</option>
+                        <option value="email">Email</option>
+                        <option value="meeting">Meeting</option>
+                        <option value="follow-up">Follow-up</option>
+                        <option value="demo">Demo</option>
+                        <option value="site-visit">Site Visit</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Remarks</label>
+                    <textarea id="editTaskRemarks" name="remarks" rows="2" placeholder="Additional notes..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Due Date *</label>
+                        <input type="datetime-local" id="editTaskDueDate" name="dueDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="editTaskStatus" name="status">
+                            <option value="pending">Pending</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Assigned To *</label>
+                    <select id="editTaskAssignedTo" name="assignedTo" required>
+                        <option value="">Select User</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="editTaskNotes" name="notes" rows="2"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditTaskModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Send Email Modal -->
+    <div id="sendEmailModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Send Email</h2>
+                <button class="modal-close" onclick="closeSendEmailModal()">&times;</button>
+            </div>
+            <form id="sendEmailForm" onsubmit="handleSendEmail(event)">
+                <input type="hidden" id="emailLeadId">
+                <div class="form-group">
+                    <label>To *</label>
+                    <input type="email" id="emailTo" name="to" required>
+                </div>
+                <div class="form-group">
+                    <label>CC</label>
+                    <input type="text" id="emailCc" name="cc" placeholder="Separate multiple emails with commas">
+                </div>
+                <div class="form-group">
+                    <label>Subject *</label>
+                    <input type="text" name="subject" required>
+                </div>
+                <div class="form-group">
+                    <label>Message *</label>
+                    <textarea name="content" rows="4" required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeSendEmailModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Email</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Send WhatsApp Modal -->
+    <div id="sendWhatsAppModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Send WhatsApp Message</h2>
+                <button class="modal-close" onclick="closeSendWhatsAppModal()">&times;</button>
+            </div>
+            <form id="sendWhatsAppForm" onsubmit="handleSendWhatsApp(event)">
+                <input type="hidden" id="whatsappLeadId">
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="whatsappTo" name="to" required placeholder="+1234567890">
+                </div>
+                <div class="form-group">
+                    <label>Message *</label>
+                    <textarea name="content" rows="3" required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeSendWhatsAppModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fab fa-whatsapp"></i> Send Message</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Log Call Modal -->
+    <div id="logCallModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Log Call</h2>
+                <button class="modal-close" onclick="closeLogCallModal()">&times;</button>
+            </div>
+            <form id="logCallForm" onsubmit="handleLogCall(event)">
+                <input type="hidden" id="callLeadId">
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="callTo" name="to" required placeholder="+1234567890">
+                </div>
+                <div class="form-group">
+                    <label>Call Duration (minutes)</label>
+                    <input type="number" name="duration" min="0" step="1" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Call Notes *</label>
+                    <textarea name="content" rows="3" required placeholder="Summary of the call..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeLogCallModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-phone"></i> Log Call</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Log Meeting Modal -->
+    <div id="logMeetingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Log Meeting</h2>
+                <button class="modal-close" onclick="closeLogMeetingModal()">&times;</button>
+            </div>
+            <form id="logMeetingForm" onsubmit="handleLogMeeting(event)">
+                <input type="hidden" id="meetingLeadId">
+                <div class="form-group">
+                    <label>Meeting Duration (minutes)</label>
+                    <input type="number" name="duration" min="0" step="1" value="30">
+                </div>
+                <div class="form-group">
+                    <label>Attendees</label>
+                    <input type="text" name="attendees" placeholder="John Doe, Jane Smith">
+                </div>
+                <div class="form-group">
+                    <label>Meeting Notes *</label>
+                    <textarea name="content" rows="3" required
+                        placeholder="Meeting summary, key points discussed, action items..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeLogMeetingModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-check"></i> Log
+                        Meeting</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Upload File Modal -->
+    <div id="uploadFileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload File</h2>
+                <button class="modal-close" onclick="closeUploadFileModal()">&times;</button>
+            </div>
+            <form id="uploadFileForm" onsubmit="handleUploadFile(event)">
+                <input type="hidden" id="uploadLeadId">
+                <div class="form-group">
+                    <label>Select File *</label>
+                    <input type="file" id="fileInput" name="file" required>
+                    <small>Supported: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG (Max 10MB)</small>
+                </div>
+                <div class="form-group">
+                    <label>File Description</label>
+                    <input type="text" name="description" placeholder="e.g., Proposal, Contract, Invoice">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeUploadFileModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="userModalTitle">Add New User</h2>
+                <button class="modal-close" onclick="closeAddUserModal()">&times;</button>
+            </div>
+            <form id="addUserForm" onsubmit="handleAddUser(event)">
+                <input type="hidden" id="editUserId">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" name="fullName" id="userFullName" required placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" name="email" id="userEmail" required placeholder="john@company.com">
+                </div>
+                <div class="form-group">
+                    <label>Password *</label>
+                    <input type="password" name="password" id="userPassword" required minlength="6"
+                        placeholder="Minimum 6 characters">
+                    <small id="passwordHint">Leave blank to keep current password when editing</small>
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" id="userUsername" placeholder="johndoe">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" name="phone" id="userPhone" placeholder="+1234567890">
+                </div>
+                <div class="form-group">
+                    <label>Role *</label>
+                    <select name="role" id="userRole" required>
+                        <option value="">Select Role</option>
+                        <option value="staff">Staff</option>
+                        <option value="manager">Manager</option>
+                        <option value="admin">Admin</option>
+                        <option value="superadmin" class="superadmin-only">Super Admin</option>
+                    </select>
+                    <small>
+                        <strong>Staff:</strong> Can update assigned leads (status & remarks only)<br>
+                        <strong>Manager:</strong> Team management & lead creation for own team<br>
+                        <strong>Admin:</strong> Department management, role assignment & reporting<br>
+                        <strong>Super Admin:</strong> Full system access including user creation & role assignment
+                    </small>
+                </div>
+                <div class="form-group" id="departmentSelectGroup" style="display: none;">
+                    <label>Department <span class="required">*</span></label>
+                    <select name="department" id="userDepartment">
+                        <option value="">Select Department</option>
+                        <option value="sales">Sales</option>
+                        <option value="operations">Operations</option>
+                    </select>
+                    <small>Select the department for this user</small>
+                </div>
+                <div class="form-group" id="managerSelectGroup" style="display: none;">
+                    <label>Assign to Manager</label>
+                    <select name="managerId" id="userManagerId">
+                        <option value="">No Manager</option>
+                    </select>
+                    <small>Select a manager to assign this user to their team</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View User Modal -->
+    <div id="viewUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>User Details</h2>
+                <button class="modal-close" onclick="closeViewUserModal()">&times;</button>
+            </div>
+            <div id="viewUserContent"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeViewUserModal()">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editUserFromView()"><i class="fas fa-edit"></i>
+                    Edit</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/dashboard.js"></script>
+    <script>
+        // Sidebar toggle — works on all screen sizes
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (!sidebar) return;
+            // On small screens: use .active class (sidebar slides in/out)
+            if (window.innerWidth <= 1024) {
+                sidebar.classList.toggle('active');
+                if (overlay) overlay.classList.toggle('active');
+            } else {
+                // On large screens: collapse/expand width
+                sidebar.classList.toggle('collapsed');
+            }
+        }
+        // Close sidebar when clicking a nav item on mobile
+        document.querySelectorAll('.nav-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+                if (window.innerWidth <= 1024) {
+                    const sidebar = document.getElementById('sidebar');
+                    const overlay = document.getElementById('sidebarOverlay');
+                    if (sidebar) sidebar.classList.remove('active');
+                    if (overlay) overlay.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

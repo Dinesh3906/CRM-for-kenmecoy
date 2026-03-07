@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-chart-line"></i> CRM</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="refreshDragAndDrop()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button class="btn btn-secondary" onclick="openPipelineModal()">
+                    <i class="fas fa-cog"></i> Manage Pipeline
+                </button>
+                <button class="btn btn-primary" onclick="openAddLeadModal()">
+                    <i class="fas fa-plus"></i> Add New Lead
+                </button>
+                <button class="btn btn-secondary" onclick="openProfileModal()">
+                    <i class="fas fa-user"></i> Profile
+                </button>
+                <button id="logoutBtn" class="btn btn-secondary" style="display:none;" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <div class="pipeline-container">
+            <div class="pipeline-column" data-status="qualification">
+                <div class="column-header">
+                    <h3><i class="fas fa-search"></i> Qualification</h3>
+                    <span class="lead-count" id="qualification-count">0</span>
+                </div>
+                <div class="leads-container" id="qualification-leads"></div>
+            </div>
+
+            <div class="pipeline-column" data-status="need-analysis">
+                <div class="column-header">
+                    <h3><i class="fas fa-clipboard-list"></i> Need Analysis</h3>
+                    <span class="lead-count" id="need-analysis-count">0</span>
+                </div>
+                <div class="leads-container" id="need-analysis-leads"></div>
+            </div>
+
+            <div class="pipeline-column" data-status="price-quote">
+                <div class="column-header">
+                    <h3><i class="fas fa-dollar-sign"></i> Price Quote</h3>
+                    <span class="lead-count" id="price-quote-count">0</span>
+                </div>
+                <div class="leads-container" id="price-quote-leads"></div>
+            </div>
+
+            <div class="pipeline-column" data-status="review">
+                <div class="column-header">
+                    <h3><i class="fas fa-eye"></i> Review</h3>
+                    <span class="lead-count" id="review-count">0</span>
+                </div>
+                <div class="leads-container" id="review-leads"></div>
+            </div>
+
+            <div class="pipeline-column" data-status="closed">
+                <div class="column-header">
+                    <h3><i class="fas fa-check-circle"></i> Closed</h3>
+                    <span class="lead-count" id="closed-count">0</span>
+                </div>
+                <div class="leads-container" id="closed-leads"></div>
+            </div>
+
+            <div class="pipeline-column" data-status="rejected">
+                <div class="column-header">
+                    <h3><i class="fas fa-times-circle"></i> Rejected</h3>
+                    <span class="lead-count" id="rejected-count">0</span>
+                </div>
+                <div class="leads-container" id="rejected-leads"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Lead Modal -->
+    <div id="addLeadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Lead</h2>
+                <span class="close" onclick="closeAddLeadModal()">&times;</span>
+            </div>
+            <form id="addLeadForm">
+                <div class="form-group">
+                    <label for="name">Name *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="company">Company *</label>
+                    <input type="text" id="company" name="company" required>
+                </div>
+                
+                <!-- Multiple Emails Section -->
+                <div class="form-group">
+                    <label>Email Addresses *</label>
+                    <div id="emailsContainer">
+                        <div class="contact-item">
+                            <div class="contact-inputs">
+                                <input type="email" name="emails[0][email]" placeholder="Email address" required>
+                                <select name="emails[0][type]">
+                                    <option value="primary">Primary</option>
+                                    <option value="work">Work</option>
+                                    <option value="personal">Personal</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn-remove-contact" onclick="removeContact('email', 0)" style="display: none;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addEmail()">
+                        <i class="fas fa-plus"></i> Add Another Email
+                    </button>
+                </div>
+                
+                <!-- Multiple Phones Section -->
+                <div class="form-group">
+                    <label>Phone Numbers</label>
+                    <div id="phonesContainer">
+                        <div class="contact-item">
+                            <div class="contact-inputs">
+                                <input type="tel" name="phones[0][phone]" placeholder="Phone number">
+                                <select name="phones[0][type]">
+                                    <option value="mobile">Mobile</option>
+                                    <option value="work">Work</option>
+                                    <option value="home">Home</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn-remove-contact" onclick="removeContact('phone', 0)" style="display: none;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addPhone()">
+                        <i class="fas fa-plus"></i> Add Another Phone
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="value">Value ($)</label>
+                    <input type="number" id="value" name="value" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="assignedTo">Assigned To</label>
+                    <input type="text" id="assignedTo" name="assignedTo">
+                </div>
+                <div class="form-group">
+                    <label for="priority">Priority</label>
+                    <select id="priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="source">Source</label>
+                    <input type="text" id="source" name="source">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddLeadModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Lead</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lead Details Modal -->
+    <div id="leadDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Lead Details</h2>
+                <span class="close" onclick="closeLeadDetailsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Name:</span>
+                    <span class="lead-detail-value" id="detailName"></span>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Company:</span>
+                    <span class="lead-detail-value" id="detailCompany"></span>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Email Addresses:</span>
+                    <div class="lead-detail-value" id="detailEmails"></div>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Phone Numbers:</span>
+                    <div class="lead-detail-value" id="detailPhones"></div>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Value:</span>
+                    <span class="lead-detail-value" id="detailValue"></span>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Description:</span>
+                    <span class="lead-detail-value" id="detailDescription"></span>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Assigned To:</span>
+                    <span class="lead-detail-value" id="detailAssignedTo"></span>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Priority:</span>
+                    <span class="lead-detail-value" id="detailPriority"></span>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Source:</span>
+                    <span class="lead-detail-value" id="detailSource"></span>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Status:</span>
+                    <span class="lead-detail-value" id="detailStatus"></span>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Created:</span>
+                    <span class="lead-detail-value" id="detailCreated"></span>
+                </div>
+                <div class="lead-detail-item">
+                    <span class="lead-detail-label">Last Updated:</span>
+                    <span class="lead-detail-value" id="detailUpdated"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeLeadDetailsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Lead Modal -->
+    <div id="editLeadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Lead</h2>
+                <span class="close" onclick="closeEditLeadModal()">&times;</span>
+            </div>
+            <form id="editLeadForm">
+                <input type="hidden" id="editLeadId" name="leadId">
+                <div class="form-group">
+                    <label for="editName">Name *</label>
+                    <input type="text" id="editName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCompany">Company *</label>
+                    <input type="text" id="editCompany" name="company" required>
+                </div>
+                
+                <!-- Multiple Emails Section -->
+                <div class="form-group">
+                    <label>Email Addresses *</label>
+                    <div id="editEmailsContainer">
+                        <div class="contact-item">
+                            <div class="contact-inputs">
+                                <input type="email" name="emails[0][email]" placeholder="Email address" required>
+                                <select name="emails[0][type]">
+                                    <option value="primary">Primary</option>
+                                    <option value="work">Work</option>
+                                    <option value="personal">Personal</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn-remove-contact" onclick="removeContact('editEmail', 0)" style="display: none;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addEditEmail()">
+                        <i class="fas fa-plus"></i> Add Another Email
+                    </button>
+                </div>
+                
+                <!-- Multiple Phones Section -->
+                <div class="form-group">
+                    <label>Phone Numbers</label>
+                    <div id="editPhonesContainer">
+                        <div class="contact-item">
+                            <div class="contact-inputs">
+                                <input type="tel" name="phones[0][phone]" placeholder="Phone number">
+                                <select name="phones[0][type]">
+                                    <option value="mobile">Mobile</option>
+                                    <option value="work">Work</option>
+                                    <option value="home">Home</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn-remove-contact" onclick="removeContact('editPhone', 0)" style="display: none;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addEditPhone()">
+                        <i class="fas fa-plus"></i> Add Another Phone
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editValue">Value ($)</label>
+                    <input type="number" id="editValue" name="value" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="editDescription">Description</label>
+                    <textarea id="editDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editAssignedTo">Assigned To</label>
+                    <input type="text" id="editAssignedTo" name="assignedTo">
+                </div>
+                <div class="form-group">
+                    <label for="editPriority">Priority</label>
+                    <select id="editPriority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editSource">Source</label>
+                    <input type="text" id="editSource" name="source">
+                </div>
+                <div class="form-group">
+                    <label for="editStatus">Status</label>
+                    <select id="editStatus" name="status">
+                        <option value="qualification">Qualification</option>
+                        <option value="need-analysis">Need Analysis</option>
+                        <option value="price-quote">Price Quote</option>
+                        <option value="review">Review</option>
+                        <option value="closed">Closed</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditLeadModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Lead</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pipeline Management Modal -->
+    <div id="pipelineModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2>Manage Pipeline</h2>
+                <span class="close" onclick="closePipelineModal()">&times;</span>
+            </div>
+            <div style="padding: 30px;">
+                <div class="pipeline-info">
+                    <h3>Current Pipeline: <span id="currentPipelineName">Default Pipeline</span></h3>
+                    <p>Add, edit, or reorder columns to customize your sales pipeline.</p>
+                </div>
+                
+                <div class="pipeline-actions" style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="addNewColumn()">
+                        <i class="fas fa-plus"></i> Add New Column
+                    </button>
+                    <button class="btn btn-secondary" onclick="savePipelineChanges()">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+                
+                <div class="columns-container" id="columnsContainer">
+                    <!-- Columns will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Column Modal -->
+    <div id="columnModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 id="columnModalTitle">Add New Column</h2>
+                <span class="close" onclick="closeColumnModal()">&times;</span>
+            </div>
+            <form id="columnForm">
+                <input type="hidden" id="columnIndex" name="index">
+                <div class="form-group">
+                    <label for="columnName">Column Name *</label>
+                    <input type="text" id="columnName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="columnIcon">Icon (Font Awesome class)</label>
+                    <input type="text" id="columnIcon" name="icon" placeholder="fas fa-circle">
+                </div>
+                <div class="form-group">
+                    <label for="columnColor">Color</label>
+                    <input type="color" id="columnColor" name="color" value="#667eea">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeColumnModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Column</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h2>Login</h2>
+                <span class="close" onclick="closeLoginModal()">&times;</span>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" name="password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeLoginModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </div>
+                <div class="form-footer">
+                    <span>Don't have an account? <a href="#" onclick="openRegisterModal()">Register</a></span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h2>Register</h2>
+                <span class="close" onclick="closeRegisterModal()">&times;</span>
+            </div>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" name="password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeRegisterModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </div>
+                <div class="form-footer">
+                    <span>Already have an account? <a href="#" onclick="openLoginModal()">Login</a></span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Subscription Modal -->
+    <div id="subscriptionModal" class="modal">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h2>Upgrade Subscription</h2>
+                <span class="close" onclick="closeSubscriptionModal()">&times;</span>
+            </div>
+            <div id="subscriptionStepPlans">
+                <h3>Select a Plan</h3>
+                <div id="plansContainer"></div>
+            </div>
+            <div id="subscriptionStepQR" style="display:none;">
+                <h3>Scan QR to Pay</h3>
+                <img id="paymentQR" src="" alt="Payment QR" style="width:200px;height:200px;">
+                <div class="form-group">
+                    <label for="utrInput">Enter UTR/Transaction ID</label>
+                    <input type="text" id="utrInput" name="utr">
+                </div>
+                <button class="btn btn-primary" onclick="submitUTR()">Submit UTR</button>
+            </div>
+            <div id="subscriptionStepPending" style="display:none;">
+                <h3>Payment Pending Approval</h3>
+                <p>Your payment is pending admin approval. You will be notified once your subscription is active.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Approval Modal -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content" style="max-width:600px;">
+            <div class="modal-header">
+                <h2>Pending Subscription Approvals</h2>
+                <span class="close" onclick="closeAdminModal()">&times;</span>
+            </div>
+            <div id="pendingApprovalsContainer"></div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Profile Settings</h2>
+                <span class="close" onclick="closeProfileModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="section">
+                    <h3>API Key</h3>
+                    <p>Use this key to authenticate API requests and webhooks.</p>
+                    <div class="api-key-container">
+                        <input type="text" id="apiKeyDisplay" readonly>
+                        <button class="btn btn-secondary" onclick="copyApiKey()">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <button class="btn btn-warning" onclick="regenerateApiKey()">
+                        <i class="fas fa-sync"></i> Regenerate API Key
+                    </button>
+                    <div id="apiLimitMessage" style="margin-top:10px;"></div>
+                </div>
+                <div class="section">
+                    <h3>API Documentation</h3>
+                    <p>To create leads via the API, send a POST request to:</p>
+                    <code>/api/leads/webhook</code>
+                    <p>Include your API key in the request headers:</p>
+                    <code>x-api-key: YOUR_API_KEY</code>
+                    <p>Or as a query parameter:</p>
+                    <code>/api/leads/webhook?apiKey=YOUR_API_KEY</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
