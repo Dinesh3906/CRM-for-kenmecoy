@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Lead = require('../models/Lead');
+const ActivityLog = require('../models/ActivityLog');
 const auth = require('../middleware/auth');
 
 // Webhook endpoint to create a lead in Qualification
@@ -64,43 +65,32 @@ router.use(auth);
 router.get('/', async (req, res) => {
     try {
         let query = {};
-
-        console.log('GET /leads - User:', req.user.email, 'Role:', req.user.role, 'Department:', req.user.department);
-
+        const mongoose = require('mongoose');
         const User = require('../models/User');
 
-        // Apply role-based filtering with hierarchy
-        // SuperAdmin: sees all leads
-        // Admin: sees leads in their department
-        // Manager: sees their team's leads
-        // Staff: sees only assigned leads
+        console.log(`[DEBUG] GET /leads - Triggered by ${req.user.email} (${req.user.role})`);
 
+        // Apply role-based filtering with hierarchy
         if (req.user.role === 'superadmin') {
-            // SuperAdmin sees all leads
             query = {};
-            console.log('SuperAdmin: showing all leads');
+            console.log('[DEBUG] superadmin: viewing all leads');
         } else if (req.user.role === 'admin') {
-            // Admin sees leads in their department
-            // Find all users in the same department
             const deptUsers = await User.find({ department: req.user.department }).select('_id');
             const deptUserIds = deptUsers.map(u => u._id);
 
-            // Also find managers who report to this admin (even if department not set)
             const managersUnderAdmin = await User.find({
                 role: 'manager',
                 createdBy: req.user._id
             }).select('_id');
             const managerIds = managersUnderAdmin.map(m => m._id);
 
-            // Find staff under those managers (even if department not set)
             const staffUnderManagers = await User.find({
                 role: 'staff',
                 managerId: { $in: managerIds }
             }).select('_id');
             const staffIds = staffUnderManagers.map(s => s._id);
 
-            // Combine all user IDs
-            const allDeptUserIds = [...new Set([...deptUserIds, ...managerIds, ...staffIds])];
+            const allDeptUserIds = [...new Set([...deptUserIds, ...managerIds, ...staffIds])].map(id => new mongoose.Types.ObjectId(id));
 
             query = {
                 $or: [
@@ -108,39 +98,46 @@ router.get('/', async (req, res) => {
                     { assignedTo: { $in: allDeptUserIds } }
                 ]
             };
-            console.log('Admin: showing department leads (dept users + hierarchy)');
+            console.log(`[DEBUG] admin: department access for ${allDeptUserIds.length} users`);
         } else if (req.user.role === 'manager') {
-            // Manager sees their team's leads
             const teamMemberIds = await User.find({ managerId: req.user._id }).select('_id');
-            const teamIds = [req.user._id, ...teamMemberIds.map(member => member._id)];
+            const teamIds = [req.user._id, ...teamMemberIds.map(member => member._id)].map(id => new mongoose.Types.ObjectId(id));
+            
             query = {
                 $or: [
                     { user: { $in: teamIds } },
                     { assignedTo: { $in: teamIds } }
                 ]
             };
-            console.log('Manager: showing team leads');
+            console.log(`[DEBUG] manager: team access for ${teamIds.length} users`);
         } else {
-            // Staff sees leads assigned to them or created by them
+            // Staff Role
+            const staffId = new mongoose.Types.ObjectId(req.user._id);
             query = {
                 $or: [
-                    { assignedTo: req.user._id },
-                    { user: req.user._id }
+                    { assignedTo: staffId },
+                    { user: staffId }
                 ]
             };
-            console.log('Staff: showing assigned and created leads');
+            console.log(`[DEBUG] staff: access for self (${req.user.email})`);
         }
 
-        console.log('Query:', JSON.stringify(query));
+        console.log('[DEBUG] Executing Query:', JSON.stringify(query));
+        
         const leads = await Lead.find(query)
             .populate('user', 'fullName email username')
             .populate('assignedTo', 'fullName email')
             .sort({ createdAt: -1 });
-        console.log('Found leads:', leads.length);
+
+        console.log(`[DEBUG] Successfully fetched ${leads.length} leads`);
         res.json(leads);
     } catch (error) {
-        console.error('Error fetching leads:', error);
-        res.status(500).json({ message: 'Error fetching leads', error: error.message });
+        console.error('[CRITICAL] Error fetching leads:', error);
+        res.status(500).json({ 
+            message: 'Error fetching leads', 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+        });
     }
 });
 
@@ -478,42 +475,62 @@ router.put('/:id', async (req, res) => {
 // Delete a lead (SuperAdmin and Admin only, Manager for their team)
 router.delete('/:id', async (req, res) => {
     try {
+        console.log(`[DELETE LEAD] ID: ${req.params.id}, User: ${req.user.email} (${req.user.role})`);
+        
         // Staff cannot delete leads
         if (req.user.role === 'staff') {
+            console.log('[DELETE LEAD] Access denied: Role is staff');
             return res.status(403).json({ message: 'Staff cannot delete leads. Contact your Manager or Admin.' });
         }
 
         const lead = await Lead.findById(req.params.id);
         if (!lead) {
+            console.log('[DELETE LEAD] Error: Lead not found');
             return res.status(404).json({ message: 'Lead not found' });
         }
 
         const User = require('../models/User');
 
         // Check delete permission based on role hierarchy
-        if (req.user.role === 'manager') {
+        let hasAccess = false;
+        if (req.user.role === 'superadmin') {
+            hasAccess = true;
+        } else if (req.user.role === 'manager') {
             // Manager can only delete leads assigned to their team
             const teamMembers = await User.find({ managerId: req.user._id }).select('_id');
             const teamIds = [req.user._id.toString(), ...teamMembers.map(m => m._id.toString())];
-            const hasAccess = teamIds.includes(lead.assignedTo?.toString()) || teamIds.includes(lead.user?.toString());
-            if (!hasAccess) {
-                return res.status(403).json({ message: 'You can only delete leads assigned to your team' });
-            }
+            hasAccess = teamIds.includes(lead.assignedTo?.toString()) || teamIds.includes(lead.user?.toString());
+            console.log(`[DELETE LEAD] Manager access: ${hasAccess}`);
         } else if (req.user.role === 'admin') {
             // Admin can only delete leads in their department
             const deptUsers = await User.find({ department: req.user.department }).select('_id');
             const deptUserIds = deptUsers.map(u => u._id.toString());
-            const hasAccess = deptUserIds.includes(lead.assignedTo?.toString()) || deptUserIds.includes(lead.user?.toString());
-            if (!hasAccess) {
-                return res.status(403).json({ message: 'You can only delete leads in your department' });
-            }
+            hasAccess = deptUserIds.includes(lead.assignedTo?.toString()) || deptUserIds.includes(lead.user?.toString());
+            console.log(`[DELETE LEAD] Admin access: ${hasAccess}`);
         }
-        // SuperAdmin can delete any lead
+
+        if (!hasAccess) {
+            console.log('[DELETE LEAD] Access denied: Role-based hierarchy check failed');
+            return res.status(403).json({ message: 'Access denied. You do not have permission to delete this lead.' });
+        }
 
         await Lead.findByIdAndDelete(req.params.id);
+        console.log('[DELETE LEAD] Lead deleted from DB');
+
+        // Log activity
+        await new ActivityLog({
+            user: req.user._id,
+            action: 'lead_deleted',
+            module: 'leads',
+            targetId: req.params.id,
+            description: `Deleted lead: ${lead.companyName || lead.name || 'Unknown'}`,
+            metadata: { companyName: lead.companyName }
+        }).save();
+        console.log('[DELETE LEAD] Activity logged');
+
         res.json({ message: 'Lead deleted successfully' });
     } catch (error) {
-        console.error('Error deleting lead:', error);
+        console.error('[DELETE LEAD] Error:', error);
         res.status(500).json({ message: 'Error deleting lead', error: error.message });
     }
 });
@@ -835,5 +852,6 @@ router.patch('/:id/tags', async (req, res) => {
         res.status(500).json({ message: 'Error updating tags', error: error.message });
     }
 });
+
 
 module.exports = router; 

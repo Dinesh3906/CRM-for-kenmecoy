@@ -2,7 +2,13 @@
 
 > A full-stack CRM (Customer Relationship Management) system with drag-and-drop sales pipeline management, multi-role access control, task management, communication logging, and analytics.
 
----
+---echo "# crm" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/suptocoder/crm.git
+git push -u origin main
 
 ## 🗂️ Project Info
 
