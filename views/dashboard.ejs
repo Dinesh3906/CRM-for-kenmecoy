@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="/dashboard.css">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
       .icon-sm { font-size: 16px; width: 16px; height: 16px; }
       .icon-md { font-size: 20px; width: 20px; height: 20px; }
@@ -139,22 +141,48 @@
                 <div class="dash-card dash-card-chart">
                     <div class="dash-card-header">
                         <h3><ion-icon name="stats-chart-outline" class="icon-md"></ion-icon> Lead Analytics</h3>
-                        <span class="dash-card-badge">This Month</span>
-                    </div>
-                    <div class="lead-chart-area">
-                        <div class="chart-bar-group">
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:40%;" data-label="Mon"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:65%;" data-label="Tue"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:50%;" data-label="Wed"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:80%;" data-label="Thu"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:55%;" data-label="Fri"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:70%;" data-label="Sat"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:30%;" data-label="Sun"></div></div>
+                        <div class="dash-card-actions">
+                            <select id="leadChartPeriod" class="chart-filter-select" onchange="updateLeadAnalyticsChart()">
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="year">This Year</option>
+                            </select>
+                            <button class="icon-btn" onclick="updateLeadAnalyticsChart()" title="Refresh Data">
+                                <ion-icon name="refresh-outline" class="icon-sm"></ion-icon>
+                            </button>
+                            <button class="icon-btn" onclick="exportLeadChart()" title="Export PNG">
+                                <ion-icon name="download-outline" class="icon-sm"></ion-icon>
+                            </button>
                         </div>
                     </div>
+                    <div class="lead-chart-area">
+                        <div id="chartLoadingOverlay" class="chart-loading-overlay">
+                            <div class="spinner"></div>
+                        </div>
+                        <div id="chartEmptyState" class="chart-empty-state" style="display: none;">
+                            <ion-icon name="bar-chart-outline" class="icon-xl"></ion-icon>
+                            <p>No leads found for this period</p>
+                            <button class="btn btn-primary btn-sm" onclick="openAddLeadModal()">Add Your First Lead</button>
+                        </div>
+                        <canvas id="leadAnalyticsChart"></canvas>
+                    </div>
                     <div class="chart-stats-row">
-                        <div class="chart-stat"><span class="chart-stat-val" id="totalLeads">0</span><span class="chart-stat-lbl">Total Leads <span class="stat-hint">(everyone starts somewhere!)</span></span></div>
-                        <div class="chart-stat"><span class="chart-stat-val" id="closedDeals">0</span><span class="chart-stat-lbl">Closed Deals <span class="stat-hint">(first win coming soon!)</span></span></div>
+                        <div class="chart-stat">
+                            <span class="chart-stat-val" id="totalLeads">0</span>
+                            <span class="chart-stat-lbl">Total Leads</span>
+                        </div>
+                        <div class="chart-stat">
+                            <span class="chart-stat-val trend-up" id="leadTrend">+0%</span>
+                            <span class="chart-stat-lbl">Trend</span>
+                        </div>
+                        <div class="chart-stat">
+                            <span class="chart-stat-val" id="bestDay">None</span>
+                            <span class="chart-stat-lbl">Best Day</span>
+                        </div>
+                        <div class="chart-stat">
+                            <span class="chart-stat-val" id="avgLeads">0</span>
+                            <span class="chart-stat-lbl">Avg/Day</span>
+                        </div>
                     </div>
                 </div>
 
@@ -242,7 +270,7 @@
             </div>
 
             <div class="table-container">
-                <table class="data-table">
+                <table class="modern-table">
                     <thead>
                         <tr>
                             <th>Company Name</th>
@@ -256,6 +284,10 @@
                     </thead>
                     <tbody id="leadsTableBody"></tbody>
                 </table>
+                <div id="leadsEmptyState" class="empty-state" style="display: none; padding: 40px; text-align: center; color: #64748B;">
+                    <ion-icon name="people-outline" style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;"></ion-icon>
+                    <p>No potential customers found matching your criteria</p>
+                </div>
             </div>
         </section>
 
@@ -1960,6 +1992,7 @@
     </div>
 
     <script src="/dashboard.js"></script>
+    <script src="/lead-analytics.js"></script>
     <script>
         // Initialize greeting
         if (typeof updateGreeting === 'function') updateGreeting();

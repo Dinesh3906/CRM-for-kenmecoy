@@ -12,14 +12,15 @@ const activityLogSchema = new mongoose.Schema({
         enum: [
             'lead_created', 'lead_updated', 'lead_deleted', 'lead_assigned', 'lead_status_changed',
             'operations_created', 'operations_updated', 'operations_deleted', 'operations_assigned', 'operations_status_changed',
+            'operations_lead_created', 'operations_lead_updated', 'operations_lead_deleted',
             'user_created', 'user_updated', 'user_deleted', 'user_activated', 'user_deactivated',
             'task_created', 'task_updated', 'task_completed', 'task_deleted',
             'pipeline_created', 'pipeline_updated', 'pipeline_deleted',
             'role_assigned', 'permission_updated',
-            'email_sent', 'whatsapp_sent',
-            'file_uploaded', 'file_deleted',
-            'settings_updated', 'login', 'logout',
-            'export_data', 'import_data'
+            'email_sent', 'whatsapp_sent', 'call_made', 'meeting_held',
+            'file_uploaded', 'file_deleted', 'file_attached',
+            'settings_updated', 'login', 'logout', 'password_reset',
+            'export_data', 'import_data', 'note_added', 'status_changed', 'created', 'assigned'
         ]
     },
     module: {

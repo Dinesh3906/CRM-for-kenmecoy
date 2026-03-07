@@ -1809,8 +1809,9 @@ body {
     .form-group input,
     .form-group select,
     .form-group textarea {
-        padding: 10px 12px;
+        padding: 8px 12px;
         font-size: 14px;
+        height: 42px;
     }
 
     /* Section header h2 smaller */
@@ -2005,12 +2006,14 @@ hr {
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 12px 15px;
+    padding: 10px 15px;
     border: 2px solid var(--light-color);
     border-radius: 8px;
     font-size: 14px;
     font-family: 'Inter', sans-serif;
     transition: all 0.3s ease;
+    line-height: 1.5;
+    height: 45px;
 }
 
 .form-group input:focus,
@@ -4401,60 +4404,99 @@ h2, .section-header h2, .dash-card-header h3 {
     margin-bottom: 20px;
 }
 
-.chart-bar-group {
+.dash-card-actions {
     display: flex;
-    justify-content: space-between;
-    width: 100%;
-    height: 160px;
-    align-items: flex-end;
+    gap: 8px;
+    align-items: center;
 }
 
-.chart-bar-wrapper {
-    flex: 1;
+.chart-filter-select {
+    padding: 4px 8px;
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-600);
+    background: white;
+    cursor: pointer;
+}
+
+.lead-chart-area {
+    position: relative;
+    width: 100%;
+    height: 350px;
+    margin-bottom: 20px;
+}
+
+.chart-loading-overlay,
+.chart-empty-state {
+    position: absolute;
+    inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    height: 100%;
-    justify-content: flex-end;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.82);
+    z-index: 10;
+    border-radius: 8px;
 }
 
-.chart-bar {
-    width: 32px;
-    background: linear-gradient(to top, var(--primary-500), var(--primary-400));
-    border-radius: 6px 6px 0 0;
-    position: relative;
-    transition: height 1s ease-out;
-}
-
-.chart-bar::after {
-    content: attr(data-label);
-    position: absolute;
-    bottom: -22px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 12px;
-    font-weight: 600;
+.chart-empty-state {
+    gap: 12px;
     color: var(--gray-500);
+    text-align: center;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--gray-200);
+    border-top: 3px solid #3B82F6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .chart-stats-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
 }
 
 .chart-stat {
     display: flex;
     flex-direction: column;
+    padding: 10px;
+    background: #F8FAFC;
+    border-radius: 8px;
+    border: 1px solid #F1F5F9;
 }
 
 .chart-stat-val {
-    font-size: 24px;
-    font-weight: 800;
-    color: var(--gray-900);
+    font-size: 18px;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+.chart-stat-val.trend-up {
+    color: #10B981;
+}
+
+.chart-stat-val.trend-down {
+    color: #EF4444;
 }
 
 .chart-stat-lbl {
+    font-size: 11px;
+    color: #64748B;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
     font-size: 13px;
     font-weight: 600;
     color: var(--gray-600);

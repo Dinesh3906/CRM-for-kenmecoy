@@ -1,4 +1,4 @@
-// Global Variables
+﻿// Global Variables
 let authToken = localStorage.getItem('authToken') || localStorage.getItem('token');
 let currentUser = null;
 let currentSection = 'dashboard';
@@ -227,7 +227,7 @@ async function initializeDashboard() {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
         if (leadsResponse.ok) {
-            allLeads = await leadsResponse.json();
+            allLeadsData = await leadsResponse.json();
         }
 
         // Start notification polling
@@ -368,7 +368,7 @@ function hasPermission(module, action) {
 // Check permission level (for data filtering)
 function getPermissionLevel(module, action) {
     if (!currentUser || !currentUser.permissions) return 'none';
-    if (currentUser.role === 'superadmin') return 'all';
+    if (['superadmin', 'admin', 'manager'].includes(currentUser.role)) return 'all';
 
     const modulePerms = currentUser.permissions[module];
     if (!modulePerms) return 'none';
@@ -742,7 +742,10 @@ async function loadLeads() {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
-        if (!response.ok) throw new Error('Failed to fetch leads');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch leads`);
+        }
         
         allLeadsData = await response.json();
         
@@ -762,8 +765,22 @@ async function loadLeads() {
         
         renderLeadsTable();
     } catch (error) {
-        console.error('Leads error:', error);
-        document.getElementById('leadsTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading leads</td></tr>';
+        console.error('[CRITICAL] leads error:', error);
+        const leadsTableBody = document.getElementById('leadsTableBody');
+        if (leadsTableBody) {
+            leadsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-danger" style="padding: 40px;">
+                        <ion-icon name="alert-circle-outline" style="font-size: 32px; margin-bottom: 8px;"></ion-icon>
+                        <div style="font-weight: 700;">Error loading leads</div>
+                        <div style="font-size: 13px; margin-top: 4px; color: #64748B;">${error.message}</div>
+                        <button class="btn btn-secondary btn-sm" onclick="loadLeads()" style="margin-top: 15px;">
+                            <ion-icon name="refresh-outline" class="icon-xs"></ion-icon> Retry
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
     }
 }
 
@@ -772,6 +789,19 @@ function renderLeadsTable() {
     const emptyState = document.getElementById('leadsEmptyState');
     const tableElement = document.querySelector('.modern-table');
     const pagination = document.querySelector('.pagination-container');
+
+    // Add robust null guards to prevent crashes if elements are missing
+    if (!tbody || !emptyState || !tableElement) {
+        console.warn('[WARN] Essential table elements missing from DOM');
+        return;
+    }
+
+    // Ensure filteredLeadsData exists
+    if (typeof filteredLeadsData === 'undefined') {
+        console.error('[CRITICAL] filteredLeadsData is not defined');
+        return;
+    }
+
 
     if (filteredLeadsData.length === 0) {
         emptyState.style.display = 'flex';
@@ -988,7 +1018,7 @@ function populateLeadSelector() {
     if (!select) return;
 
     select.innerHTML = '<option value="">Select Lead...</option>' +
-        allLeads.map(lead => `
+        allLeadsData.map(lead => `
             <option value="${lead._id}">${lead.companyName} - ${lead.contactPerson}</option>
         `).join('');
 }
@@ -1650,7 +1680,6 @@ function refreshDashboard() {
 // Pipeline Management Variables
 let currentPipeline = null;
 let draggedElement = null;
-let allLeads = [];
 
 // Load Pipeline with Drag-and-Drop
 async function loadPipeline() {
@@ -1670,7 +1699,7 @@ async function loadPipeline() {
         const leadsResponse = await fetch(`${API_BASE}/leads`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        allLeads = await leadsResponse.json();
+        allLeadsData = await leadsResponse.json();
 
         renderPipeline();
     } catch (error) {
@@ -1685,7 +1714,7 @@ function renderPipeline() {
     const sortedColumns = currentPipeline.columns.sort((a, b) => a.order - b.order);
 
     container.innerHTML = sortedColumns.map(column => {
-        const columnLeads = allLeads.filter(lead => lead.status === column.id);
+        const columnLeads = allLeadsData.filter(lead => lead.status === column.id);
         const leadsHTML = columnLeads.map(lead => {
             const assignedUser = lead.assignedTo?.fullName || lead.assignedTo?.email || 'Unassigned';
             
@@ -1816,8 +1845,8 @@ async function handleDrop(e) {
             itemType = 'lead';
 
             // Check if status actually changed for leads
-            const leadIndex = allLeads.findIndex(l => l._id === itemId);
-            if (leadIndex !== -1 && allLeads[leadIndex].status === newStatus) {
+            const leadIndex = allLeadsData.findIndex(l => l._id === itemId);
+            if (leadIndex !== -1 && allLeadsData[leadIndex].status === newStatus) {
                 return; // No change needed
             }
         }
@@ -1838,9 +1867,9 @@ async function handleDrop(e) {
 
         // Update local data for leads
         if (!isOperation) {
-            const leadIndex = allLeads.findIndex(l => l._id === itemId);
+            const leadIndex = allLeadsData.findIndex(l => l._id === itemId);
             if (leadIndex !== -1) {
-                allLeads[leadIndex].status = newStatus;
+                allLeadsData[leadIndex].status = newStatus;
             }
             renderPipeline();
         } else {
@@ -2486,8 +2515,8 @@ function openSendEmailModal(leadId = null) {
     if (leadId) {
         currentCommunicationLeadId = leadId;
         document.getElementById('emailLeadId').value = leadId;
-        // Pre-fill email if lead is in allLeads
-        const lead = allLeads.find(l => l._id === leadId);
+        // Pre-fill email if lead is in allLeadsData
+        const lead = allLeadsData.find(l => l._id === leadId);
         if (lead && lead.emails && lead.emails.length > 0) {
             document.getElementById('emailTo').value = lead.emails[0].email;
         }
@@ -2546,8 +2575,8 @@ function openSendWhatsAppModal(leadId = null) {
     if (leadId) {
         currentCommunicationLeadId = leadId;
         document.getElementById('whatsappLeadId').value = leadId;
-        // Pre-fill phone if lead is in allLeads
-        const lead = allLeads.find(l => l._id === leadId);
+        // Pre-fill phone if lead is in allLeadsData
+        const lead = allLeadsData.find(l => l._id === leadId);
         if (lead && lead.phones && lead.phones.length > 0) {
             document.getElementById('whatsappTo').value = lead.phones[0].phone;
         }
@@ -2604,8 +2633,8 @@ function openLogCallModal(leadId = null) {
     if (leadId) {
         currentCommunicationLeadId = leadId;
         document.getElementById('callLeadId').value = leadId;
-        // Pre-fill phone if lead is in allLeads
-        const lead = allLeads.find(l => l._id === leadId);
+        // Pre-fill phone if lead is in allLeadsData
+        const lead = allLeadsData.find(l => l._id === leadId);
         if (lead && lead.phones && lead.phones.length > 0) {
             document.getElementById('callTo').value = lead.phones[0].phone;
         }
@@ -3348,7 +3377,7 @@ async function deleteLead(id) {
 
     // If permission is 'assigned', check if lead is assigned to current user
     if (deletePermission === 'assigned') {
-        const lead = allLeads.find(l => l._id === id);
+        const lead = allLeadsData.find(l => l._id === id);
         if (lead && lead.assignedTo !== currentUser._id.toString()) {
             showNotification('You can only delete leads assigned to you', 'error');
             return;
@@ -3357,21 +3386,24 @@ async function deleteLead(id) {
 
     if (!confirm('Delete lead?')) return;
     try {
-        const response = await fetch(`${API_BASE}/leads/${id}`, {
+        const response = await fetch(API_BASE + '/leads/' + id, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${authToken}` }
+            headers: { 'Authorization': 'Bearer ' + authToken }
         });
 
+        let data = {};
+        try { data = await response.json(); } catch(e) {}
+
         if (!response.ok) {
-            throw new Error('Failed to delete lead');
+            throw new Error(data.message || ('Server error ' + response.status));
         }
 
-        allLeads = allLeads.filter(l => l._id !== id);
+        allLeadsData = allLeadsData.filter(l => l._id !== id);
         if (currentSection === 'pipeline') renderPipeline();
         else if (currentSection === 'leads') loadLeads();
-        showNotification('Lead deleted', 'success');
+        showNotification('Lead deleted successfully', 'success');
     } catch (error) {
-        showNotification('Error deleting lead', 'error');
+        showNotification('Error deleting lead: ' + error.message, 'error');
     }
 }
 // Task Management Functions

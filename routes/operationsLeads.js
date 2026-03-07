@@ -253,17 +253,22 @@ router.put('/:id', async (req, res) => {
 // Delete operations lead (Admin and Manager only)
 router.delete('/:id', async (req, res) => {
     try {
+        console.log(`[DELETE OPERATION] ID: ${req.params.id}, User: ${req.user.email} (${req.user.role})`);
+        
         // Staff cannot delete tickets
         if (req.user.role === 'staff') {
+            console.log('[DELETE OPERATION] Access denied: Role is staff');
             return res.status(403).json({ message: 'Staff cannot delete tickets. Contact your manager or admin.' });
         }
         
         const lead = await OperationsLead.findById(req.params.id);
         if (!lead) {
+            console.log('[DELETE OPERATION] Error: Lead not found');
             return res.status(404).json({ message: 'Operations lead not found' });
         }
         
         await OperationsLead.findByIdAndDelete(req.params.id);
+        console.log('[DELETE OPERATION] Lead deleted from DB');
         
         // Log activity
         await new ActivityLog({
@@ -274,10 +279,11 @@ router.delete('/:id', async (req, res) => {
             targetModel: 'OperationsLead',
             description: `Deleted operations ticket: ${lead.ticketNumber}`
         }).save();
+        console.log('[DELETE OPERATION] Activity logged');
         
         res.json({ message: 'Operations lead deleted successfully' });
     } catch (error) {
-        console.error('Error deleting operations lead:', error);
+        console.error('[DELETE OPERATION] Error:', error);
         res.status(500).json({ message: 'Error deleting operations lead', error: error.message });
     }
 });

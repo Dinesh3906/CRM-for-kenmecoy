@@ -256,6 +256,156 @@ router.get('/leads', async (req, res) => {
     }
 });
 
+// Lead statistics for chart
+router.get('/leads/stats', async (req, res) => {
+    try {
+        const { period = 'week' } = req.query; // week, month, year
+        const userId = req.user._id;
+        const userRole = req.user.role;
+
+        let matchQuery = {};
+        if (userRole === 'superadmin') {
+            matchQuery = {};
+        } else if (userRole === 'admin') {
+            const deptUsers = await User.find({ department: req.user.department }).select('_id');
+            const deptUserIds = deptUsers.map(u => u._id);
+            matchQuery = {
+                $or: [
+                    { user: { $in: deptUserIds } },
+                    { assignedTo: { $in: deptUserIds } }
+                ]
+            };
+        } else if (userRole === 'manager') {
+            const teamMembers = await User.find({ managerId: userId }).select('_id');
+            const teamIds = [userId, ...teamMembers.map(m => m._id)];
+            matchQuery = {
+                $or: [
+                    { user: { $in: teamIds } },
+                    { assignedTo: { $in: teamIds } }
+                ]
+            };
+        } else {
+            matchQuery = { assignedTo: userId };
+        }
+
+        const now = new Date();
+        let startDate;
+        let labels = [];
+        let groupByFormat = {};
+
+        if (period === 'week') {
+            startDate = new Date(now.setDate(now.getDate() - 6));
+            startDate.setHours(0, 0, 0, 0);
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(startDate);
+                date.setDate(date.getDate() + i);
+                labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+            }
+            groupByFormat = {
+                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+            };
+        } else if (period === 'month') {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            for (let i = 1; i <= lastDay; i++) {
+                labels.push(i.toString());
+            }
+            groupByFormat = {
+                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+            };
+        } else if (period === 'year') {
+            startDate = new Date(now.getFullYear(), 0, 1);
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            groupByFormat = {
+                month: { $month: "$createdAt" }
+            };
+        }
+
+        let prevStartDate;
+        let prevEndDate = new Date(startDate);
+        if (period === 'week') {
+            prevStartDate = new Date(prevEndDate);
+            prevStartDate.setDate(prevStartDate.getDate() - 7);
+        } else if (period === 'month') {
+            prevStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        } else if (period === 'year') {
+            prevStartDate = new Date(now.getFullYear() - 1, 0, 1);
+        }
+
+        matchQuery.createdAt = { $gte: startDate };
+
+        // Real trend calculation
+        const prevPeriodMatch = { ...matchQuery, createdAt: { $gte: prevStartDate, $lt: prevEndDate } };
+        const prevTotal = await Lead.countDocuments(prevPeriodMatch);
+
+        const leadsData = await Lead.aggregate([
+            { $match: matchQuery },
+            {
+                $group: {
+                    _id: groupByFormat,
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Process data for Chart.js
+        let chartData = new Array(labels.length).fill(0);
+        if (period === 'week') {
+            leadsData.forEach(item => {
+                const itemDate = new Date(item._id);
+                const diff = Math.floor((itemDate - startDate) / (1000 * 60 * 60 * 24));
+                if (diff >= 0 && diff < 7) chartData[diff] = item.count;
+            });
+        } else if (period === 'month') {
+            leadsData.forEach(item => {
+                const itemDate = new Date(item._id);
+                const day = itemDate.getDate();
+                if (day <= chartData.length) chartData[day - 1] = item.count;
+            });
+        } else if (period === 'year') {
+            leadsData.forEach(item => {
+                const month = item._id.month;
+                if (month >= 1 && month <= 12) chartData[month - 1] = item.count;
+            });
+        }
+
+        const total = chartData.reduce((a, b) => a + b, 0);
+        
+        // Calculate dynamic trend
+        let trend = "0%";
+        if (prevTotal > 0) {
+            const diff = ((total - prevTotal) / prevTotal) * 100;
+            trend = (diff >= 0 ? "+" : "") + diff.toFixed(0) + "%";
+        } else if (total > 0) {
+            trend = "+100%";
+        }
+        
+        // Find best day
+        const maxVal = Math.max(...chartData);
+        const bestDayIdx = chartData.indexOf(maxVal);
+        const bestDay = maxVal > 0 ? labels[bestDayIdx] : "None";
+
+        res.json({
+            labels,
+            datasets: [{
+                label: 'New Leads',
+                data: chartData,
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                borderColor: '#3B82F6',
+                borderWidth: 1,
+                borderRadius: 5,
+                hoverBackgroundColor: '#2563EB'
+            }],
+            total,
+            trend,
+            bestDay
+        });
+    } catch (error) {
+        console.error('Error fetching lead statistics:', error);
+        res.status(500).json({ message: 'Error fetching lead statistics', error: error.message });
+    }
+});
+
 // Team performance
 router.get('/team-performance', async (req, res) => {
     try {
