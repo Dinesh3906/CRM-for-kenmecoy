@@ -154,7 +154,8 @@ function showLoginModal() {
 }
 
 function showLogin() {
-    document.getElementById('registerModal').classList.remove('active');
+    const registerModal = document.getElementById('registerModal');
+    if (registerModal) registerModal.classList.remove('active');
     document.getElementById('loginModal').classList.add('active');
 }
 
@@ -205,10 +206,14 @@ async function initializeDashboard() {
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
         console.log('Current user:', currentUser);
 
-        document.getElementById('currentUserName').textContent = currentUser.fullName || currentUser.email;
+        const userName = currentUser.fullName || currentUser.email;
         const roleText = capitalizeRole(currentUser.role) || 'User';
         const deptText = currentUser.department ? ` - ${capitalizeRole(currentUser.department)}` : '';
-        document.getElementById('currentUserRole').textContent = roleText + deptText;
+        const fullRole = roleText + deptText;
+
+        document.getElementById('currentUserName').textContent = userName;
+        document.getElementById('currentUserRole').textContent = fullRole;
+;
 
         // Apply role-based UI visibility
         applyRoleBasedUI();
@@ -378,8 +383,11 @@ function showSection(sectionName) {
         section.classList.remove('active');
     });
 
-    // Remove active from all nav items
+    // Remove active from all nav items (sidebar + top-nav)
     document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    document.querySelectorAll('.top-nav-item').forEach(item => {
         item.classList.remove('active');
     });
 
@@ -389,7 +397,7 @@ function showSection(sectionName) {
         section.classList.add('active');
         currentSection = sectionName;
 
-        // Update page title
+        // Update page title (silently skip if element removed)
         const titles = {
             'dashboard': 'Dashboard',
             'leads': 'Sales Leads',
@@ -405,10 +413,12 @@ function showSection(sectionName) {
             'import-export': 'Import/Export',
             'invoices': 'Invoices'
         };
-        document.getElementById('pageTitle').textContent = titles[sectionName] || sectionName;
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.textContent = titles[sectionName] || sectionName;
 
-        // Activate nav item
+        // Activate nav items (sidebar + top-nav)
         document.querySelector(`.nav-item[data-section="${sectionName}"]`)?.classList.add('active');
+        document.querySelector(`.top-nav-item[data-section="${sectionName}"]`)?.classList.add('active');
 
         // Load section data
         loadSectionData(sectionName);
@@ -417,6 +427,20 @@ function showSection(sectionName) {
 
 function toggleSidebar() {
     document.querySelector('.sidebar').classList.toggle('active');
+}
+
+// Update greeting based on time of day
+function updateGreeting() {
+    const hour = new Date().getHours();
+    let greeting = 'Good Morning';
+    if (hour >= 12 && hour < 17) greeting = 'Good Afternoon';
+    else if (hour >= 17) greeting = 'Good Evening';
+    const el = document.getElementById('greetingTitle');
+    const nameEl = document.getElementById('greetingName');
+    if (el && nameEl) {
+        const name = nameEl.textContent;
+        el.innerHTML = `${greeting}, <span id="greetingName">${name}</span>!`;
+    }
 }
 
 // Dashboard Data
@@ -618,7 +642,7 @@ async function loadRecentActivity() {
         container.innerHTML = activities.slice(0, 5).map(activity => `
             <div class="activity-item">
                 <div class="activity-icon">
-                    <i class="fas fa-circle"></i>
+                    <ion-icon name="circle-outline" class="icon-sm"></ion-icon>
                 </div>
                 <div class="activity-content">
                     <div class="activity-text">${activity.description || activity.action || 'Activity'}</div>
@@ -674,7 +698,7 @@ async function loadUpcomingTasks() {
             <div class="task-item" onclick="viewTask('${task._id}')">
                 <div class="task-title">${actionLabel}</div>
                 <div class="task-meta">
-                    <span><i class="fas fa-calendar"></i> ${formatDate(task.dueDate)}</span>
+                    <span><ion-icon name="calendar-outline" class="icon-sm"></ion-icon> ${formatDate(task.dueDate)}</span>
                     <span class="badge badge-${task.status === 'completed' ? 'success' : task.status === 'in-progress' ? 'warning' : 'info'}">${task.status}</span>
                 </div>
             </div>
@@ -688,45 +712,187 @@ async function loadUpcomingTasks() {
     }
 }
 
-// Leads Management
+// Leads Management Pagination and State
+let currentLeadsPage = 1;
+const leadsPerPage = 10;
+let allLeadsData = [];
+let filteredLeadsData = [];
+
+// Create global search listener if it doesn't exist
+document.addEventListener('DOMContentLoaded', () => {
+    const leadSearch = document.getElementById('leadSearchInput');
+    if (leadSearch) {
+        leadSearch.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            filteredLeadsData = allLeadsData.filter(lead => 
+                (lead.companyName && lead.companyName.toLowerCase().includes(searchTerm)) ||
+                (lead.contactPerson && lead.contactPerson.toLowerCase().includes(searchTerm)) ||
+                (lead.email && lead.email.toLowerCase().includes(searchTerm)) ||
+                (lead.mobile && lead.mobile.toLowerCase().includes(searchTerm))
+            );
+            currentLeadsPage = 1;
+            renderLeadsTable();
+        });
+    }
+});
+
 async function loadLeads() {
     try {
         const response = await fetch(`${API_BASE}/leads`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
-        const leads = await response.json();
-        const tbody = document.getElementById('leadsTableBody');
-
-        if (leads.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No leads found</td></tr>';
-            return;
+        if (!response.ok) throw new Error('Failed to fetch leads');
+        
+        allLeadsData = await response.json();
+        
+        // Initial setup for search filtering if input has value
+        const searchInput = document.getElementById('leadSearchInput');
+        if (searchInput && searchInput.value) {
+            const searchTerm = searchInput.value.toLowerCase();
+            filteredLeadsData = allLeadsData.filter(lead => 
+                (lead.companyName && lead.companyName.toLowerCase().includes(searchTerm)) ||
+                (lead.contactPerson && lead.contactPerson.toLowerCase().includes(searchTerm)) ||
+                (lead.email && lead.email.toLowerCase().includes(searchTerm)) ||
+                (lead.mobile && lead.mobile.toLowerCase().includes(searchTerm))
+            );
+        } else {
+            filteredLeadsData = [...allLeadsData];
         }
-
-        const isStaff = currentUser?.role === 'staff';
-
-        tbody.innerHTML = leads.map(lead => {
-            const assignedUser = lead.assignedTo?.fullName || lead.assignedTo?.email || 'Unassigned';
-
-            return `
-                <tr>
-                    <td>${lead.companyName || 'N/A'}</td>
-                    <td>${lead.contactPerson || 'N/A'}</td>
-                    <td>${lead.email ? `<a href="mailto:${lead.email}" style="color:var(--primary-color);text-decoration:none;">${lead.email}</a>` : 'N/A'}</td>
-                    <td>${lead.mobile || 'N/A'}</td>
-                    <td>${assignedUser}</td>
-                    <td><span class="badge badge-info">${lead.status}</span></td>
-                    <td>
-                        <button class="btn btn-sm" onclick="viewLead('${lead._id}')"><i class="fas fa-eye"></i></button>
-                        <button class="btn btn-sm" onclick="editLead('${lead._id}')"><i class="fas fa-edit"></i></button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        
+        renderLeadsTable();
     } catch (error) {
         console.error('Leads error:', error);
+        document.getElementById('leadsTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading leads</td></tr>';
     }
 }
+
+function renderLeadsTable() {
+    const tbody = document.getElementById('leadsTableBody');
+    const emptyState = document.getElementById('leadsEmptyState');
+    const tableElement = document.querySelector('.modern-table');
+    const pagination = document.querySelector('.pagination-container');
+
+    if (filteredLeadsData.length === 0) {
+        emptyState.style.display = 'flex';
+        tableElement.style.display = 'none';
+        if(pagination) pagination.style.display = 'none';
+        return;
+    }
+
+    emptyState.style.display = 'none';
+    tableElement.style.display = 'table';
+    if(pagination) pagination.style.display = 'flex';
+
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredLeadsData.length / leadsPerPage);
+    if (currentLeadsPage > totalPages) currentLeadsPage = totalPages;
+    if (currentLeadsPage < 1) currentLeadsPage = 1;
+    
+    const startIndex = (currentLeadsPage - 1) * leadsPerPage;
+    const endIndex = Math.min(startIndex + leadsPerPage, filteredLeadsData.length);
+    const paginatedLeads = filteredLeadsData.slice(startIndex, endIndex);
+
+    const isStaff = currentUser?.role === 'staff';
+
+    tbody.innerHTML = paginatedLeads.map(lead => {
+        const assignedUser = lead.assignedTo?.fullName || lead.assignedTo?.email || 'Unassigned';
+        const companyName = lead.companyName || 'N/A';
+        const companyInitial = companyName !== 'N/A' ? companyName.charAt(0).toUpperCase() : '?';
+        
+        // Determine status class
+        const statusLower = lead.status?.toLowerCase() || '';
+        let statusClass = 'status-new';
+        if (statusLower.includes('contact')) statusClass = 'status-contacted';
+        else if (statusLower.includes('qualif') || statusLower.includes('won')) statusClass = 'status-qualified';
+        else if (statusLower.includes('lost')) statusClass = 'status-lost';
+        else if (statusLower.includes('proposal') || statusLower.includes('negotiation')) statusClass = 'status-proposal';
+
+        return `
+            <tr>
+                <td>
+                    <div class="company-cell">
+                        <div class="company-avatar">${companyInitial}</div>
+                        <span>${companyName}</span>
+                    </div>
+                </td>
+                <td>${lead.contactPerson || 'N/A'}</td>
+                <td>${lead.email ? `<a href="mailto:${lead.email}" style="color:#3B82F6;text-decoration:none;">${lead.email}</a>` : '<span style="color:#9CA3AF;">N/A</span>'}</td>
+                <td>${lead.mobile || '<span style="color:#9CA3AF;">N/A</span>'}</td>
+                <td>${assignedUser}</td>
+                <td><span class="status-pill ${statusClass}">${lead.status || 'New'}</span></td>
+                <td>
+                    <div class="modern-actions">
+                        <button class="btn-icon" onclick="viewLead('${lead._id}')" title="View"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
+                        ${!isStaff ? `<button class="btn-icon" onclick="editLead('${lead._id}')" title="Edit"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>` : ''}
+                        ${['admin', 'superadmin', 'manager'].includes(currentUser?.role) ? 
+                          `<button class="btn-icon delete" onclick="deleteLead('${lead._id}')" title="Delete"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    renderLeadPagination(totalPages);
+}
+
+function renderLeadPagination(totalPages) {
+    const pageNumbersContainer = document.getElementById('leadPageNumbers');
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    
+    if (!pageNumbersContainer || !prevBtn || !nextBtn) return;
+    
+    prevBtn.disabled = currentLeadsPage === 1;
+    nextBtn.disabled = currentLeadsPage === totalPages;
+    
+    let pagesHtml = '';
+    
+    // Simplistic pagination logic (show all or truncate intelligently if many pages)
+    let startPage = Math.max(1, currentLeadsPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    
+    if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+    }
+    
+    if (startPage > 1) {
+        pagesHtml += `<button class="btn-page" onclick="goToLeadPage(1)">1</button>`;
+        if (startPage > 2) pagesHtml += `<span style="color:#9CA3AF;">...</span>`;
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        pagesHtml += `<button class="btn-page ${i === currentLeadsPage ? 'active' : ''}" onclick="goToLeadPage(${i})">${i}</button>`;
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) pagesHtml += `<span style="color:#9CA3AF;">...</span>`;
+        pagesHtml += `<button class="btn-page" onclick="goToLeadPage(${totalPages})">${totalPages}</button>`;
+    }
+    
+    pageNumbersContainer.innerHTML = pagesHtml;
+}
+
+function prevLeadPage() {
+    if (currentLeadsPage > 1) {
+        currentLeadsPage--;
+        renderLeadsTable();
+    }
+}
+
+function nextLeadPage() {
+    const totalPages = Math.ceil(filteredLeadsData.length / leadsPerPage);
+    if (currentLeadsPage < totalPages) {
+        currentLeadsPage++;
+        renderLeadsTable();
+    }
+}
+
+function goToLeadPage(page) {
+    currentLeadsPage = page;
+    renderLeadsTable();
+}
+
 
 // Tasks Management
 async function loadTasks() {
@@ -740,7 +906,13 @@ async function loadTasks() {
         const tbody = document.getElementById('tasksTableBody');
 
         if (tasks.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No tasks found</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="7">
+                <div class="empty-state" style="border:none; padding:40px 10px;">
+                  <div class="empty-icon">🌱</div>
+                  <h3>No tasks yet!</h3>
+                  <p>A clear schedule! Ready to plan your next move?</p>
+                </div>
+            </td></tr>`;
             return;
         }
 
@@ -757,10 +929,10 @@ async function loadTasks() {
                 <td>${formatDate(task.dueDate)}</td>
                 <td><span class="badge badge-${task.status === 'completed' ? 'success' : task.status === 'in-progress' ? 'warning' : 'info'}">${task.status}</span></td>
                 <td>
-                    <button class="btn btn-sm" onclick="viewTask('${task._id}')"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-sm" onclick="editTask('${task._id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-success" onclick="completeTask('${task._id}')" ${task.status === 'completed' ? 'disabled' : ''}><i class="fas fa-check"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteTask('${task._id}')"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm" onclick="viewTask('${task._id}')"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm" onclick="editTask('${task._id}')"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-success" onclick="completeTask('${task._id}')" ${task.status === 'completed' ? 'disabled' : ''}><ion-icon name="checkmark-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteTask('${task._id}')"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>
                 </td>
             </tr>
         `}).join('');
@@ -783,20 +955,26 @@ async function loadCommunications() {
         const tbody = document.getElementById('communicationTableBody');
 
         if (comms.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No communications found</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="7">
+                <div class="empty-state" style="border:none; padding:40px 10px;">
+                  <div class="empty-icon">👋</div>
+                  <h3>Quiet around here!</h3>
+                  <p>Every great relationship starts with a hello. Time to start the conversation!</p>
+                </div>
+            </td></tr>`;
             return;
         }
 
         tbody.innerHTML = comms.map(comm => `
             <tr>
-                <td><i class="fas fa-${comm.type === 'email' ? 'envelope' : comm.type === 'whatsapp' ? 'whatsapp' : comm.type === 'call' ? 'phone' : 'handshake'}"></i> ${comm.type}</td>
+                <td><ion-icon name="${comm.type === 'email' ? 'mail-outline' : comm.type === 'whatsapp' ? 'logo-whatsapp' : comm.type === 'call' ? 'call-outline' : 'people-outline'}" class="icon-sm"></ion-icon> ${comm.type}</td>
                 <td>${comm.lead?.companyName || comm.lead?.contactPerson || 'N/A'}</td>
                 <td>${comm.subject || comm.content?.substring(0, 50) || 'N/A'}</td>
                 <td>${comm.direction}</td>
                 <td><span class="badge badge-${comm.status === 'sent' ? 'success' : comm.status === 'failed' ? 'danger' : comm.status === 'pending' ? 'warning' : 'info'}" title="${comm.status === 'pending' ? 'Service not configured' : ''}">${comm.status}${comm.status === 'pending' ? ' ⚠️' : ''}</span></td>
                 <td>${formatDate(comm.createdAt)}</td>
                 <td>
-                    <button class="btn btn-sm" onclick="viewCommunication('${comm._id}')"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-sm" onclick="viewCommunication('${comm._id}')"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
                 </td>
             </tr>
         `).join('');
@@ -1358,21 +1536,78 @@ function formatDate(date) {
     });
 }
 
+const friendlyMessages = {
+  success: [
+    "Nice work! 🎯",
+    "Done and done! ✅",
+    "You got it! 💪",
+    "Perfect! 🌟"
+  ],
+  error: [
+    "Oops! That didn't work 😅",
+    "Hmm, let's try again ",
+    "Not quite right yet 💭"
+  ],
+  welcome: [
+    "Welcome back! 👋",
+    "Great to see you! ☀️",
+    "Ready to make things happen? 🚀"
+  ]
+};
+
+function getFriendlyMessage(type) {
+  const msgs = friendlyMessages[type] || [type];
+  return msgs[Math.floor(Math.random() * msgs.length)];
+}
+
 function showNotification(message, type = 'info') {
+    // Optionally prefix with a friendly message for simple notifications
+    let finalMessage = message;
+    if (message === 'Lead created successfully') {
+        finalMessage = '✨ Lead added! You\'re growing!';
+    } else if (message === 'Task deleted') {
+        finalMessage = 'Task removed';
+    } else if (message.includes('Error')) {
+        finalMessage = 'Hmm, something doesn\'t look quite right. Let\'s try that again. (' + message + ')';
+    }
+
     const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        background: ${type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db'};
-        color: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        z-index: 10000;
-        animation: slideIn 0.3s ease;
-    `;
-    notification.textContent = message;
+    const isCelebration = (type === 'celebration');
+    
+    if (isCelebration) {
+        notification.className = 'celebration-toast';
+    } else {
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#6366F1'};
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 10000;
+            animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-weight: 500;
+        `;
+    }
+    
+    if (isCelebration) {
+        // Special celebration toast structure
+        notification.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:24px;">🎉</span>
+                <div>
+                    <div style="font-weight:bold; font-size:16px;">Congratulations!</div>
+                    <div style="font-size:14px; opacity:0.9;">${finalMessage}</div>
+                </div>
+            </div>
+        `;
+        // Inject JS confetti
+        createConfetti();
+    } else {
+        notification.textContent = finalMessage;
+    }
 
     document.body.appendChild(notification);
 
@@ -1453,6 +1688,14 @@ function renderPipeline() {
         const columnLeads = allLeads.filter(lead => lead.status === column.id);
         const leadsHTML = columnLeads.map(lead => {
             const assignedUser = lead.assignedTo?.fullName || lead.assignedTo?.email || 'Unassigned';
+            
+            // Check if user has permission to delete (admin/superadmin/manager)
+            const canDelete = ['admin', 'superadmin', 'manager'].includes(currentUser?.role);
+            // Only show delete button if lead is in 'new' column and user has permission
+            const deleteHtml = (lead.status === 'new' && canDelete) 
+                ? `<button onclick="deleteLead('${lead._id}')" class="btn-icon" style="color: #ef4444;" title="Delete"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>`
+                : '';
+
             return `
                 <div class="kanban-card" draggable="true" data-lead-id="${lead._id}">
                     <div class="kanban-card-header">
@@ -1460,14 +1703,15 @@ function renderPipeline() {
                         <span class="badge badge-info">${lead.contactPerson || 'N/A'}</span>
                     </div>
                     <div class="kanban-details">
-                        <small><i class="fas fa-envelope"></i> ${lead.email ? `<a href="mailto:${lead.email}" style="color:inherit;text-decoration:none;">${lead.email}</a>` : 'N/A'}</small>
-                        <small><i class="fas fa-phone"></i> ${lead.mobile || 'N/A'}</small>
-                        <small><i class="fas fa-user"></i> ${assignedUser}</small>
+                        <small><ion-icon name="mail-outline" class="icon-sm"></ion-icon> ${lead.email ? `<a href="mailto:${lead.email}" style="color:inherit;text-decoration:none;">${lead.email}</a>` : 'N/A'}</small>
+                        <small><ion-icon name="call-outline" class="icon-sm"></ion-icon> ${lead.mobile || 'N/A'}</small>
+                        <small><ion-icon name="person-outline" class="icon-sm"></ion-icon> ${assignedUser}</small>
                     </div>
                     <div class="kanban-footer">
                         <div class="kanban-actions">
-                            <button onclick="viewLead('${lead._id}')" class="btn-icon"><i class="fas fa-eye"></i></button>
-                            <button onclick="editLead('${lead._id}')" class="btn-icon"><i class="fas fa-edit"></i></button>
+                            <button onclick="viewLead('${lead._id}')" class="btn-icon"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
+                            <button onclick="editLead('${lead._id}')" class="btn-icon"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>
+                            ${deleteHtml}
                         </div>
                     </div>
                 </div>
@@ -1715,22 +1959,22 @@ async function viewLead(id) {
             <div class="lead-quick-actions" style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                 ${lead.email ? `
                 <a href="mailto:${lead.email}" class="btn btn-sm btn-primary" style="text-decoration: none;">
-                    <i class="fas fa-envelope"></i> Send Email
+                    <ion-icon name="mail-outline" class="icon-sm"></ion-icon> Send Email
                 </a>` : `
                 <button class="btn btn-sm btn-primary" disabled>
-                    <i class="fas fa-envelope"></i> No Email
+                    <ion-icon name="mail-outline" class="icon-sm"></ion-icon> No Email
                 </button>`}
                 <button class="btn btn-sm btn-success" onclick="openSendWhatsAppModal('${id}')">
-                    <i class="fab fa-whatsapp"></i> WhatsApp
+                    <ion-icon name="logo-whatsapp" class="icon-sm"></ion-icon> WhatsApp
                 </button>
                 <button class="btn btn-sm btn-info" onclick="openLogCallModal('${id}')">
-                    <i class="fas fa-phone"></i> Log Call
+                    <ion-icon name="call-outline" class="icon-sm"></ion-icon> Log Call
                 </button>
                 <button class="btn btn-sm btn-warning" onclick="openLogMeetingModal('${id}')">
-                    <i class="fas fa-calendar-check"></i> Log Meeting
+                    <ion-icon name="calendar-outline" class="icon-sm"></ion-icon> Log Meeting
                 </button>
                 <button class="btn btn-sm btn-secondary" onclick="openUploadFileModal('${id}')">
-                    <i class="fas fa-upload"></i> Upload File
+                    <ion-icon name="cloud-upload-outline" class="icon-sm"></ion-icon> Upload File
                 </button>
             </div>
         `;
@@ -1768,10 +2012,10 @@ function renderLeadNotesTab(lead) {
     if (!lead.notes || lead.notes.length === 0) {
         return `
             <div style="text-align: center; padding: 40px; color: #666;">
-                <i class="fas fa-sticky-note" style="font-size: 48px; margin-bottom: 16px;"></i>
+                <ion-icon name="document-outline" class="icon-xl" style="font-size: 48px; margin-bottom: 16px;"></ion-icon>
                 <p>No notes yet</p>
                 <button class="btn btn-primary" onclick="openAddNoteModal('${lead._id}')">
-                    <i class="fas fa-plus"></i> Add Note
+                    <ion-icon name="add-outline" class="icon-sm"></ion-icon> Add Note
                 </button>
             </div>
         `;
@@ -1780,7 +2024,7 @@ function renderLeadNotesTab(lead) {
     return `
         <div style="margin-bottom: 16px;">
             <button class="btn btn-primary btn-sm" onclick="openAddNoteModal('${lead._id}')">
-                <i class="fas fa-plus"></i> Add Note
+                <ion-icon name="add-outline" class="icon-sm"></ion-icon> Add Note
             </button>
         </div>
         <div class="notes-list">
@@ -1798,10 +2042,10 @@ function renderLeadNotesTab(lead) {
                         <div style="display: flex; gap: 8px;">
                             ${note.createdBy?._id === currentUser?._id || ['admin', 'superadmin'].includes(currentUser?.role) ? `
                                 <button class="btn btn-sm btn-info" onclick="editNote('${lead._id}', '${note._id}', \`${note.content.replace(/`/g, '\\`')}\`)">
-                                    <i class="fas fa-edit"></i>
+                                    <ion-icon name="create-outline" class="icon-sm"></ion-icon>
                                 </button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteNote('${lead._id}', '${note._id}')">
-                                    <i class="fas fa-trash"></i>
+                                    <ion-icon name="trash-outline" class="icon-sm"></ion-icon>
                                 </button>
                             ` : ''}
                         </div>
@@ -1817,10 +2061,10 @@ function renderLeadFilesTab(lead) {
     if (!lead.attachments || lead.attachments.length === 0) {
         return `
             <div style="text-align: center; padding: 40px; color: #666;">
-                <i class="fas fa-folder-open" style="font-size: 48px; margin-bottom: 16px;"></i>
+                <ion-icon name="folder-open-outline" class="icon-xl" style="font-size: 48px; margin-bottom: 16px;"></ion-icon>
                 <p>No files uploaded yet</p>
                 <button class="btn btn-primary" onclick="openUploadFileModal('${lead._id}')">
-                    <i class="fas fa-upload"></i> Upload First File
+                    <ion-icon name="cloud-upload-outline" class="icon-sm"></ion-icon> Upload First File
                 </button>
             </div>
         `;
@@ -1829,13 +2073,13 @@ function renderLeadFilesTab(lead) {
     return `
         <div style="margin-bottom: 16px;">
             <button class="btn btn-primary btn-sm" onclick="openUploadFileModal('${lead._id}')">
-                <i class="fas fa-plus"></i> Upload New File
+                <ion-icon name="add-outline" class="icon-sm"></ion-icon> Upload New File
             </button>
         </div>
         <div class="files-list">
             ${lead.attachments.map(file => `
                 <div class="file-item" style="display: flex; align-items: center; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px;">
-                    <i class="fas fa-file" style="font-size: 24px; margin-right: 12px; color: #4F46E5;"></i>
+                    <ion-icon name="document-outline" class="icon-lg" style="font-size: 24px; margin-right: 12px; color: #4F46E5;"></ion-icon>
                     <div style="flex: 1;">
                         <div style="font-weight: 500;">${file.originalName}</div>
                         <div style="font-size: 12px; color: #666;">
@@ -1844,10 +2088,10 @@ function renderLeadFilesTab(lead) {
                     </div>
                     <div style="display: flex; gap: 8px;">
                         <button class="btn btn-sm btn-info" onclick="downloadFile('${file.path}', '${file.originalName}')">
-                            <i class="fas fa-download"></i>
+                            <ion-icon name="download-outline" class="icon-sm"></ion-icon>
                         </button>
                         <button class="btn btn-sm btn-danger" onclick="deleteFile('${lead._id}', '${file._id}')">
-                            <i class="fas fa-trash"></i>
+                            <ion-icon name="trash-outline" class="icon-sm"></ion-icon>
                         </button>
                     </div>
                 </div>
@@ -1860,7 +2104,7 @@ function renderLeadCommunicationsTab(communications) {
     if (!communications || communications.length === 0) {
         return `
             <div style="text-align: center; padding: 40px; color: #666;">
-                <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 16px;"></i>
+                <ion-icon name="chatbubbles-outline" class="icon-xl" style="font-size: 48px; margin-bottom: 16px;"></ion-icon>
                 <p>No communications yet</p>
             </div>
         `;
@@ -1900,7 +2144,7 @@ function renderLeadTimelineTab(lead) {
     if (!lead.timeline || lead.timeline.length === 0) {
         return `
             <div style="text-align: center; padding: 40px; color: #666;">
-                <i class="fas fa-clock" style="font-size: 48px; margin-bottom: 16px;"></i>
+                <ion-icon name="time-outline" class="icon-xl" style="font-size: 48px; margin-bottom: 16px;"></ion-icon>
                 <p>No timeline events yet</p>
             </div>
         `;
@@ -2039,7 +2283,11 @@ async function handleEditLead(e) {
 
         if (!response.ok) throw new Error('Failed to update lead');
 
-        showNotification('Lead updated successfully', 'success');
+        if (leadData.status === 'won' || leadData.status === 'qualified') {
+            showNotification('Deal closed! That\'s amazing work! 🌟', 'celebration');
+        } else {
+            showNotification('Lead updated successfully', 'success');
+        }
         closeEditLeadModal();
 
         if (currentSection === 'pipeline') loadPipeline();
@@ -2144,16 +2392,16 @@ function loadPipelineStagesList() {
             </div>
             <div class="stage-actions">
                 <button class="btn-icon" onclick="movePipelineStage(${index}, -1)" ${index === 0 ? 'disabled' : ''}>
-                    <i class="fas fa-arrow-up"></i>
+                    <ion-icon name="arrow-up-outline" class="icon-sm"></ion-icon>
                 </button>
                 <button class="btn-icon" onclick="movePipelineStage(${index}, 1)" ${index === sortedColumns.length - 1 ? 'disabled' : ''}>
-                    <i class="fas fa-arrow-down"></i>
+                    <ion-icon name="arrow-down-outline" class="icon-sm"></ion-icon>
                 </button>
                 <button class="btn-icon" onclick="editPipelineStage(${index})">
-                    <i class="fas fa-edit"></i>
+                    <ion-icon name="create-outline" class="icon-sm"></ion-icon>
                 </button>
                 <button class="btn-icon btn-danger" onclick="deletePipelineStage(${index})" ${currentPipeline.columns.length <= 2 ? 'disabled' : ''}>
-                    <i class="fas fa-trash"></i>
+                    <ion-icon name="trash-outline" class="icon-sm"></ion-icon>
                 </button>
             </div>
         </div>
@@ -2654,29 +2902,31 @@ async function loadUsers() {
             <tr>
                 <td>${user.fullName || 'N/A'}</td>
                 <td>${user.email}</td>
-                <td><span class="badge badge-${user.role === 'superadmin' ? 'danger' : user.role === 'admin' ? 'primary' : user.role === 'manager' ? 'warning' : 'info'}">${capitalizeRole(user.role)}</span></td>
-                <td><span class="badge badge-${user.isActive ? 'success' : 'secondary'}">${user.isActive ? 'Active' : 'Inactive'}</span></td>
+                <td><span class="user-badge role-${user.role === 'superadmin' ? 'superadmin' : user.role === 'admin' ? 'admin' : user.role === 'manager' ? 'manager' : 'default'}">${capitalizeRole(user.role)}</span></td>
+                <td><span class="user-badge status-${user.isActive ? 'active' : 'inactive'}">${user.isActive ? 'Active' : 'Inactive'}</span></td>
                 <td>${user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</td>
-                <td class="actions">
-                    <button class="btn-icon" onclick="viewUser('${user._id}')" title="View">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    ${hasPermission('users', 'edit') ? `
-                    <button class="btn-icon" onclick="editUser('${user._id}')" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-icon" onclick="toggleUserStatus('${user._id}', ${user.isActive})" title="${user.isActive ? 'Deactivate' : 'Activate'}">
-                        <i class="fas fa-${user.isActive ? 'ban' : 'check-circle'}"></i>
-                    </button>
-                    <button class="btn-icon" onclick="resetUserPassword('${user._id}')" title="Reset Password">
-                        <i class="fas fa-key"></i>
-                    </button>
-                    ` : ''}
-                    ${hasPermission('users', 'delete') && user._id !== currentUser._id ? `
-                    <button class="btn-icon btn-icon-danger" onclick="deleteUser('${user._id}')" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    ` : ''}
+                <td>
+                    <div class="user-actions-stack">
+                        <button class="btn-icon-stack" onclick="viewUser('${user._id}')" title="View">
+                            <ion-icon name="eye-outline" class="icon-sm"></ion-icon>
+                        </button>
+                        ${hasPermission('users', 'edit') ? `
+                        <button class="btn-icon-stack" onclick="editUser('${user._id}')" title="Edit">
+                            <ion-icon name="create-outline" class="icon-sm"></ion-icon>
+                        </button>
+                        <button class="btn-icon-stack" onclick="toggleUserStatus('${user._id}', ${user.isActive})" title="${user.isActive ? 'Deactivate' : 'Activate'}">
+                            <ion-icon name="${user.isActive ? 'ban-outline' : 'checkmark-circle-outline'}" class="icon-sm"></ion-icon>
+                        </button>
+                        <button class="btn-icon-stack" onclick="resetUserPassword('${user._id}')" title="Reset Password">
+                            <ion-icon name="key-outline" class="icon-sm"></ion-icon>
+                        </button>
+                        ` : ''}
+                        ${hasPermission('users', 'delete') && user._id !== currentUser._id ? `
+                        <button class="btn-icon-stack" style="color: #ef4444;" onclick="deleteUser('${user._id}')" title="Delete">
+                            <ion-icon name="trash-outline" class="icon-sm"></ion-icon>
+                        </button>
+                        ` : ''}
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -3400,10 +3650,10 @@ async function filterTasks(filter) {
                 <td>${formatDate(task.dueDate)}</td>
                 <td><span class="badge badge-${task.status === 'completed' ? 'success' : task.status === 'in-progress' ? 'warning' : 'info'}">${task.status}</span></td>
                 <td>
-                    <button class="btn btn-sm" onclick="viewTask('${task._id}')"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-sm" onclick="editTask('${task._id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-success" onclick="completeTask('${task._id}')" ${task.status === 'completed' ? 'disabled' : ''}><i class="fas fa-check"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteTask('${task._id}')"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm" onclick="viewTask('${task._id}')"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm" onclick="editTask('${task._id}')"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-success" onclick="completeTask('${task._id}')" ${task.status === 'completed' ? 'disabled' : ''}><ion-icon name="checkmark-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteTask('${task._id}')"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>
                 </td>
             </tr>
         `;
@@ -3431,7 +3681,7 @@ async function viewCommunication(id) {
             }
             content.innerHTML = `
                 <div class="detail-grid">
-                    <div class="detail-item"><strong>Type:</strong> <i class="fas fa-${typeIcon}"></i> ${comm.type.charAt(0).toUpperCase() + comm.type.slice(1)}</div>
+                    <div class="detail-item"><strong>Type:</strong> <ion-icon name="${typeIcon}" class="icon-sm"></ion-icon> ${comm.type.charAt(0).toUpperCase() + comm.type.slice(1)}</div>
                     <div class="detail-item"><strong>Status:</strong> <span class="badge badge-${comm.status === 'sent' ? 'success' : comm.status === 'failed' ? 'danger' : 'warning'}">${comm.status}</span></div>
                     <div class="detail-item"><strong>Lead:</strong> ${leadDisplay}</div>
                     <div class="detail-item"><strong>Direction:</strong> ${comm.direction}</div>
@@ -3745,7 +3995,7 @@ function renderNotifications(notifications) {
     if (notifications.length === 0) {
         list.innerHTML = `
             <div class="notification-empty">
-                <i class="fas fa-bell-slash"></i>
+                <ion-icon name="bell-slash-outline" class="icon-sm"></ion-icon>
                 <p>No notifications</p>
             </div>
         `;
@@ -3760,7 +4010,7 @@ function renderNotifications(notifications) {
             <div class="notification-item ${!notif.read ? 'unread' : ''}" onclick="markNotificationRead('${notif._id}')">
                 <div class="notification-content">
                     <div class="notification-icon ${notif.type}">
-                        <i class="fas ${icon}"></i>
+                        <ion-icon name="${icon}" class="icon-md"></ion-icon>
                     </div>
                     <div class="notification-body">
                         <div class="notification-message">${notif.message}</div>
@@ -3952,13 +4202,13 @@ function renderOperationsTable(operations) {
                 <td>${new Date(op.createdAt).toLocaleDateString()}</td>
                 <td>
                     <button class="btn-icon" onclick="viewOperation('${op._id}')" title="View Details">
-                        <i class="fas fa-eye"></i>
+                        <ion-icon name="eye-outline" class="icon-sm"></ion-icon>
                     </button>
                     ${!isStaff ? `<button class="btn-icon" onclick="editOperation('${op._id}')" title="Edit">
-                        <i class="fas fa-edit"></i>
+                        <ion-icon name="create-outline" class="icon-sm"></ion-icon>
                     </button>` : ''}
                     ${!isStaff ? `<button class="btn-icon" onclick="deleteOperation('${op._id}')" title="Delete">
-                        <i class="fas fa-trash"></i>
+                        <ion-icon name="trash-outline" class="icon-sm"></ion-icon>
                     </button>` : ''}
                 </td>
             </tr>
@@ -4018,7 +4268,7 @@ async function loadOperationsPipeline() {
                                     <p class="text-muted">${op.category}</p>
                                 </div>
                                 <div class="kanban-card-footer">
-                                    <span><i class="fas fa-user"></i> ${op.assignedTo ? op.assignedTo.fullName : 'Unassigned'}</span>
+                                    <span><ion-icon name="person-outline" class="icon-sm"></ion-icon> ${op.assignedTo ? op.assignedTo.fullName : 'Unassigned'}</span>
                                 </div>
                             </div>
                         `).join('')}
@@ -4227,7 +4477,7 @@ async function loadTaskLeads() {
                         return `<option value="${l._id}" data-assigned-to="${assignedToId}">${l.companyName} - ${l.contactPerson}</option>`;
                     }).join('');
             } else {
-                leadSelect.innerHTML = '<option value="">No leads available</option>';
+                leadSelect.innerHTML = '<option value="" disabled selected style="color: #ef4444; font-weight: 600; background-color: #fef2f2;">⚠️ No leads available (Please add a lead first)</option>';
             }
 
             // Add change listener to auto-select the lead's assigned user
@@ -4563,16 +4813,16 @@ function loadOperationsPipelineStagesList() {
             </div>
             <div class="stage-actions">
                 <button class="btn-icon" onclick="moveOperationsStage(${index}, -1)" ${index === 0 ? 'disabled' : ''}>
-                    <i class="fas fa-arrow-up"></i>
+                    <ion-icon name="arrow-up-outline" class="icon-sm"></ion-icon>
                 </button>
                 <button class="btn-icon" onclick="moveOperationsStage(${index}, 1)" ${index === sortedColumns.length - 1 ? 'disabled' : ''}>
-                    <i class="fas fa-arrow-down"></i>
+                    <ion-icon name="arrow-down-outline" class="icon-sm"></ion-icon>
                 </button>
                 <button class="btn-icon" onclick="editOperationsStage(${index})">
-                    <i class="fas fa-edit"></i>
+                    <ion-icon name="create-outline" class="icon-sm"></ion-icon>
                 </button>
                 <button class="btn-icon btn-danger" onclick="deleteOperationsStage(${index})" ${currentOperationsPipeline.columns.length <= 2 ? 'disabled' : ''}>
-                    <i class="fas fa-trash"></i>
+                    <ion-icon name="trash-outline" class="icon-sm"></ion-icon>
                 </button>
             </div>
         </div>
@@ -4893,10 +5143,10 @@ async function loadInvoices() {
                 <td>${fmtD(inv.dueDate)}</td>
                 <td>${statusBadge(inv.paymentStatus)}</td>
                 <td style="white-space:nowrap;">
-                    <button class="btn btn-sm btn-secondary" onclick="viewInvoice('${inv._id}')" title="View"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-sm btn-primary" onclick="openEditInvoiceModal('${inv._id}')" title="Edit"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-success" onclick="downloadInvoicePDF('${inv._id}', '${inv.invoiceNumber}')" title="PDF"><i class="fas fa-file-pdf"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${inv._id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-secondary" onclick="viewInvoice('${inv._id}')" title="View"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-primary" onclick="openEditInvoiceModal('${inv._id}')" title="Edit"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-success" onclick="downloadInvoicePDF('${inv._id}', '${inv.invoiceNumber}')" title="PDF"><ion-icon name="file-pdf-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${inv._id}')" title="Delete"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>
                 </td>
             </tr>`;
         }).join('');
@@ -4962,7 +5212,7 @@ async function openEditInvoiceModal(id) {
     document.getElementById('invoiceEditId').value = '';
     document.getElementById('invoiceForm').reset();
     document.getElementById('candidateRowsContainer').innerHTML =
-        '<div style="text-align:center;padding:16px;color:#999;font-size:13px;"><i class="fas fa-spinner fa-spin"></i> Loading invoice data...</div>';
+        '<div style="text-align:center;padding:16px;color:#999;font-size:13px;"><ion-icon name="spinner-outline" class="icon-sm"></ion-icon> Loading invoice data...</div>';
     document.getElementById('invCalcPreview').style.display = 'none';
     modal.style.display = 'flex';
 
@@ -5199,7 +5449,7 @@ function addCandidateRow(data = {}) {
                 style="background:none;border:1px solid #e74c3c;border-radius:6px;color:#e74c3c;padding:2px 8px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all 0.2s;"
                 onmouseover="this.style.background='#e74c3c';this.style.color='white';"
                 onmouseout="this.style.background='none';this.style.color='#e74c3c';">
-                <i class="fas fa-trash-alt"></i> Remove
+                <ion-icon name="trash-alt-outline" class="icon-sm"></ion-icon> Remove
             </button>
         </div>
         <div style="display:grid;grid-template-columns:2fr 1.5fr 0.8fr 1.2fr;gap:10px;">
@@ -5300,8 +5550,8 @@ async function loadInvoiceCustomers() {
                 <td>${c.email || '—'}</td>
                 <td>${c.vendorCode || 'NA'}</td>
                 <td>
-                    <button class="btn btn-sm btn-primary" onclick="openEditCustomerModal('${c._id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteCustomer('${c._id}')"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-primary" onclick="openEditCustomerModal('${c._id}')"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCustomer('${c._id}')"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>
                 </td>
             </tr>`).join('');
     } catch (e) {
@@ -5435,8 +5685,8 @@ async function loadBillingCompanies() {
                 <td style="font-size:12px;">${[c.bankName, c.branchName].filter(Boolean).join(', ') || '—'}</td>
                 <td style="text-align:center;">${c.isPrimary ? '<span style="background:#003087;color:white;padding:2px 8px;border-radius:10px;font-size:11px;">Primary</span>' : ''}</td>
                 <td>
-                    <button class="btn btn-sm btn-primary" onclick="openEditBillingCompanyModal('${c._id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteBillingCompany('${c._id}')"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-primary" onclick="openEditBillingCompanyModal('${c._id}')"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteBillingCompany('${c._id}')"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>
                 </td>
             </tr>`).join('');
     } catch (e) {
@@ -5523,3 +5773,92 @@ async function deleteBillingCompany(id) {
         showNotification('Error: ' + e.message, 'error');
     }
 }
+// --- HUMANIZED MICRO-INTERACTIONS ---
+
+function createConfetti() {
+    const duration = 3000;
+    const end = Date.now() + duration;
+
+    (function frame() {
+        const confetto = document.createElement('div');
+        confetto.style.cssText = `
+            position: fixed;
+            width: ${Math.random() * 8 + 4}px;
+            height: ${Math.random() * 8 + 4}px;
+            background-color: ${['#6366F1', '#10B981', '#F59E0B', '#F97316', '#FB7185'][Math.floor(Math.random() * 5)]};
+            top: -10px;
+            left: ${Math.random() * 100}vw;
+            opacity: ${Math.random() + 0.5};
+            transform: rotate(${Math.random() * 360}deg);
+            pointer-events: none;
+            z-index: 10001;
+            transition: top 3s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 3s ease-out, opacity 3s ease-in;
+        `;
+        document.body.appendChild(confetto);
+
+        setTimeout(() => {
+            confetto.style.top = '100vh';
+            confetto.style.transform = `rotate(${Math.random() * 720}deg) scale(0)`;
+            confetto.style.opacity - '0';
+        }, 50);
+
+        setTimeout(() => confetto.remove(), 3000);
+
+        if (Date.now() < end) {
+            requestAnimationFrame(frame);
+        }
+    }());
+}
+
+// Sidebar Toggle Functionality
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const mainContent = document.querySelector('.main-content');
+    const toggleIcon = document.querySelector('#sidebarToggle ion-icon');
+
+    if (!sidebar) return;
+
+    if (window.innerWidth <= 1024) {
+        // Mobile behavior: Slide in/out
+        sidebar.classList.toggle('active');
+        if (overlay) overlay.classList.toggle('active');
+    } else {
+        // Desktop behavior: Collapse/Expand
+        sidebar.classList.toggle('collapsed');
+        if (mainContent) mainContent.classList.toggle('collapsed');
+        
+        // Update icon and save state
+        if (sidebar.classList.contains('collapsed')) {
+            if (toggleIcon) toggleIcon.setAttribute('name', 'chevron-forward-outline');
+            localStorage.setItem('sidebarCollapsed', 'true');
+        } else {
+            if (toggleIcon) toggleIcon.setAttribute('name', 'chevron-back-outline');
+            localStorage.setItem('sidebarCollapsed', 'false');
+        }
+    }
+    // Trigger resize for charts/tables to recalculate
+    window.dispatchEvent(new Event('resize'));
+}
+
+// Initialize Sidebar State on Page Load
+document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const toggleIcon = document.querySelector('#sidebarToggle ion-icon');
+    const toggleBtn = document.getElementById('sidebarToggle');
+
+
+
+    // Close sidebar on mobile when clicking nav items
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                if (sidebar) sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
+        });
+    });
+});

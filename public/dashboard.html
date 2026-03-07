@@ -166,34 +166,57 @@
 
         <!-- Leads Section -->
         <section id="leads-section" class="content-section">
-            <div class="section-header">
-                <h2>Lead Management</h2>
-                <div class="section-actions">
-                    <button class="btn btn-secondary" onclick="openLeadFilters()">
+            <div class="leads-header">
+                <h2 class="leads-title">Lead Management</h2>
+                <div class="leads-actions">
+                    <div class="leads-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search leads..." id="leadSearchInput">
+                    </div>
+                    <button class="btn btn-filter" onclick="openLeadFilters()">
                         <i class="fas fa-filter"></i> Filters
                     </button>
-                    <button class="btn btn-primary" onclick="openAddLeadModal()">
+                    <button class="btn btn-add-lead" onclick="openAddLeadModal()">
                         <i class="fas fa-plus"></i> Add Lead
                     </button>
                 </div>
             </div>
 
-            <div class="table-container">
-                <table class="data-table">
+            <div class="modern-table-container">
+                <table class="modern-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Company</th>
+                            <th>Company Name</th>
+                            <th>Contact Person</th>
                             <th>Email</th>
-                            <th>Phone</th>
+                            <th>Mobile</th>
+                            <th>Assigned To</th>
                             <th>Status</th>
-                            <th>Priority</th>
-                            <th>Value</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="leadsTableBody"></tbody>
+                    <tbody id="leadsTableBody">
+                        <!-- Leads will be loaded here -->
+                    </tbody>
                 </table>
+                <div id="leadsEmptyState" class="empty-state" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-folder-open"></i>
+                    </div>
+                    <h3>No leads found</h3>
+                    <p>Get started by adding your first lead</p>
+                    <button class="btn btn-add-lead mt-15" onclick="openAddLeadModal()">
+                        <i class="fas fa-plus"></i> Add Lead
+                    </button>
+                </div>
+                
+                <div class="pagination-container">
+                    <button class="btn-page" id="prevPageBtn" onclick="prevLeadPage()"><i class="fas fa-chevron-left"></i></button>
+                    <div class="page-numbers" id="leadPageNumbers">
+                        <!-- Page numbers will be generated here -->
+                    </div>
+                    <button class="btn-page" id="nextPageBtn" onclick="nextLeadPage()"><i class="fas fa-chevron-right"></i></button>
+                </div>
             </div>
         </section>
 
@@ -626,24 +649,71 @@
     <!-- Modals will be dynamically created in JavaScript -->
     <div id="modalContainer"></div>
 
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <h2>Login to CRM</h2>
-            <form id="loginForm" onsubmit="login(event)">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="loginEmail" required>
+    <!-- Modern Login Overlay -->
+    <div id="loginModal" class="login-split-overlay">
+        <div class="login-split-container">
+            <!-- Left Side: Branding / Illustration -->
+            <div class="login-left-panel">
+                <div class="login-illustration-wrapper">
+                    <img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-pro/assets/img/illustrations/illustration-signin.jpg" alt="Master Maintenance Illustration" class="login-illustration">
                 </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="loginPassword" required>
+                <div class="login-branding">
+                    <h2 class="login-hero-title">Master Maintenance</h2>
+                    <p class="login-hero-text">Maintaining master records is the cornerstone of efficient data management within an organization. By consistently updating and validating these master records, businesses ensure data accuracy and integrity across various systems and processes.</p>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Login</button>
-                <p class="text-center mt-20">
-                    Don't have an account? <a href="#" onclick="showRegister()">Register</a>
-                </p>
-            </form>
+                <div class="login-carousel-dots">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+
+            <!-- Right Side: Login Form -->
+            <div class="login-right-panel">
+                <div class="login-form-container">
+                    <div class="brand-header">
+                        <h1 class="brand-title">Brand Name</h1>
+                        <p class="brand-subtitle">About The Brand</p>
+                    </div>
+
+                    <div class="login-welcome">
+                        <h2>Welcome back!</h2>
+                        <p>Empower Relationships, Elevate Results: <strong>Your CRM Solution</strong></p>
+                    </div>
+
+                    <form id="loginForm" onsubmit="login(event)" class="modern-login-form">
+                        <div class="modern-form-group">
+                            <label>User Name</label>
+                            <input type="email" id="loginEmail" placeholder="Enter Your User Name" required>
+                        </div>
+                        
+                        <div class="modern-form-group">
+                            <label>Password</label>
+                            <input type="password" id="loginPassword" placeholder="Enter Your Password" required>
+                        </div>
+                        
+                        <div class="login-options">
+                            <label class="remember-me">
+                                <input type="checkbox">
+                                <span>Remember me</span>
+                            </label>
+                            <a href="#" class="forgot-password">Forgot Password?</a>
+                        </div>
+
+                        <button type="submit" class="btn-modern-login">Login</button>
+                        
+                        <p class="text-center mt-20" style="display: none;">
+                            <!-- Register hidden in new design, left here for backward compatibility -->
+                            Don't have an account? <a href="#" onclick="showRegister()">Register</a>
+                        </p>
+                    </form>
+                    
+                    <div class="login-footer">
+                        <p>&copy; Copyright 2011 Yaqoob Tech Solutions Pvt. Ltd. All rights reserved.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

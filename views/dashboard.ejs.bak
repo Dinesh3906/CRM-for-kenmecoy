@@ -6,222 +6,159 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Professional CRM Dashboard 2024</title>
     <link rel="stylesheet" href="/dashboard.css">
-    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    <style>
-      .icon-sm { font-size: 16px; width: 16px; height: 16px; }
-      .icon-md { font-size: 20px; width: 20px; height: 20px; }
-      .icon-lg { font-size: 24px; width: 24px; height: 24px; }
-      .icon-xl { font-size: 32px; width: 32px; height: 32px; }
-      
-      ion-icon {
-        vertical-align: middle;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 
 <body>
-    <!-- Enhanced Collapsible Sidebar -->
-    <aside class="sidebar collapsed" id="sidebar">
-        <!-- Sidebar Navigation -->
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-chart-line"></i>
+            <span class="sidebar-title">CRM System</span>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
 
+        <div class="user-profile">
+            <div class="user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="user-info">
+                <div class="user-name" id="currentUserName">Admin User</div>
+                <div class="user-role" id="currentUserRole">Admin</div>
+            </div>
+        </div>
 
         <nav class="sidebar-nav">
-            <a href="#" onclick="showSection('dashboard')" class="nav-item active" data-section="dashboard" data-tooltip="Dashboard">
-                <ion-icon name="analytics-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Dashboard</span>
+            <a href="#" onclick="showSection('dashboard')" class="nav-item active" data-section="dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
             </a>
-            <a href="#" onclick="showSection('leads')" class="nav-item sales-only" data-section="leads" data-tooltip="Leads">
-                <ion-icon name="people-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Leads</span>
+            <a href="#" onclick="showSection('leads')" class="nav-item sales-only" data-section="leads">
+                <i class="fas fa-users"></i>
+                <span>Leads</span>
             </a>
-            <a href="#" onclick="showSection('pipeline')" class="nav-item" data-section="pipeline" data-tooltip="Pipeline">
-                <ion-icon name="funnel-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Pipeline</span>
+            <a href="#" onclick="showSection('pipeline')" class="nav-item" data-section="pipeline">
+                <i class="fas fa-filter"></i>
+                <span>Pipeline</span>
             </a>
-            <a href="#" onclick="showSection('tasks')" class="nav-item" data-section="tasks" data-tooltip="Tasks">
-                <ion-icon name="checkbox-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Tasks</span>
+            <a href="#" onclick="showSection('tasks')" class="nav-item" data-section="tasks">
+                <i class="fas fa-tasks"></i>
+                <span>Tasks & Reminders</span>
             </a>
-            <a href="#" onclick="showSection('communication')" class="nav-item" data-section="communication" data-tooltip="Communications">
-                <ion-icon name="chatbubble-ellipses-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Communications</span>
+            <a href="#" onclick="showSection('communication')" class="nav-item" data-section="communication">
+                <i class="fas fa-comments"></i>
+                <span>Communications</span>
             </a>
-            <a href="#" onclick="showSection('analytics')" class="nav-item" data-section="analytics" data-tooltip="Analytics">
-                <ion-icon name="stats-chart-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Analytics</span>
+            <a href="#" onclick="showSection('analytics')" class="nav-item" data-section="analytics">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics</span>
             </a>
-            <a href="#" onclick="showSection('users')" class="nav-item superadmin-admin-only" data-section="users" data-tooltip="Users">
-                <ion-icon name="person-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Users</span>
+            <a href="#" onclick="showSection('users')" class="nav-item superadmin-admin-only" data-section="users">
+                <i class="fas fa-user-shield"></i>
+                <span>User Management</span>
             </a>
-            <a href="#" onclick="showSection('settings')" class="nav-item" data-section="settings" data-tooltip="Settings">
-                <ion-icon name="settings-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Settings</span>
+            <a href="#" onclick="showSection('settings')" class="nav-item" data-section="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
             </a>
-            <a href="#" onclick="showSection('activity-logs')" class="nav-item" data-section="activity-logs" data-tooltip="Activity Logs">
-                <ion-icon name="time-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Activity Logs</span>
+            <a href="#" onclick="showSection('activity-logs')" class="nav-item" data-section="activity-logs">
+                <i class="fas fa-history"></i>
+                <span>Activity Logs</span>
             </a>
-            <a href="#" onclick="showSection('import-export')" class="nav-item" data-section="import-export" data-tooltip="Import/Export">
-                <ion-icon name="swap-horizontal-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Import/Export</span>
+            <a href="#" onclick="showSection('import-export')" class="nav-item" data-section="import-export">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Import/Export</span>
             </a>
-            <a href="#" onclick="showSection('invoices')" class="nav-item superadmin-admin-only" data-section="invoices" data-tooltip="Invoices">
-                <ion-icon name="document-text-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Invoices</span>
+            <a href="#" onclick="showSection('invoices')" class="nav-item superadmin-admin-only" data-section="invoices">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Invoices</span>
             </a>
         </nav>
 
         <div class="sidebar-footer">
             <button class="btn-logout" onclick="logout()">
-                <ion-icon name="log-out-outline" class="icon-md"></ion-icon>
-                <span class="nav-text">Logout</span>
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
             </button>
         </div>
-    </aside>
+    </div>
 
-    <!-- Sidebar overlay (mobile) -->
+    <!-- Sidebar overlay (tap to close on mobile) -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-    <!-- TOP NAVIGATION BAR -->
-    <nav class="top-nav">
-        <div class="top-nav-left">
-            <div class="logo">
-                <ion-icon name="business" class="icon-lg"></ion-icon>
-                <span class="logo-text">CRM System</span>
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 id="pageTitle">Dashboard</h1>
             </div>
-        </div>
-        <!-- Navigation links moved to side panel -->
-        <div class="top-nav-center"></div>
-        <div class="top-nav-right">
-            <div class="top-nav-search">
-                <ion-icon name="search-outline" class="icon-md"></ion-icon>
-                <input type="text" placeholder="Search leads, tasks..." id="globalSearch">
-            </div>
-            <button class="top-nav-btn" onclick="showNotifications()">
-                <ion-icon name="notifications-outline" class="icon-md"></ion-icon>
-                <span class="notification-badge" id="notificationBadge">3</span>
-            </button>
-            <div class="top-nav-profile" onclick="showSection('settings')">
-                <div class="top-nav-avatar"><ion-icon name="person-circle" class="icon-lg"></ion-icon></div>
-                <div class="top-nav-user-info">
-                    <div id="currentUserName" class="top-nav-user-name">Admin User</div>
-                    <div id="currentUserRole" class="top-nav-user-role">Admin</div>
+            <div class="header-right">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search..." id="globalSearch">
                 </div>
+                <button class="header-btn" onclick="showNotifications()">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationBadge">3</span>
+                </button>
+                <button class="header-btn" onclick="showSection('settings')">
+                    <i class="fas fa-user-circle"></i>
+                </button>
             </div>
-        </div>
-    </nav>
-
-    <!-- Main Content (NO sidebar margin since top nav is used) -->
-    <div class="main-content top-nav-layout collapsed">
-        <!-- old header hidden, title shown via greeting below -->
+        </header>
 
         <!-- Dashboard Section -->
         <section id="dashboard-section" class="content-section active">
-            <!-- Greeting Header -->
-            <div class="greeting-header">
-                <div class="greeting-text">
-                    <h1 id="greetingTitle">Good morning, <span id="greetingName">Samal</span>! ☀️ Ready to crush today's goals?</h1>
-                    <p>Here's what's happening in your business right now.</p>
-                </div>
+            <div class="section-header">
+                <h2>Dashboard Overview</h2>
                 <button class="btn btn-primary" onclick="refreshDashboard()">
-                    <ion-icon name="refresh-outline" class="icon-sm"></ion-icon> Update
+                    <i class="fas fa-sync-alt"></i> Refresh
                 </button>
             </div>
 
-            <!-- 3-Column Dashboard Grid -->
-            <div class="dash-three-col">
-                <!-- LEFT: Lead Analytics Chart Card -->
-                <div class="dash-card dash-card-chart">
-                    <div class="dash-card-header">
-                        <h3><ion-icon name="stats-chart-outline" class="icon-md"></ion-icon> Lead Analytics</h3>
-                        <span class="dash-card-badge">This Month</span>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #667eea;">
+                        <i class="fas fa-users"></i>
                     </div>
-                    <div class="lead-chart-area">
-                        <div class="chart-bar-group">
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:40%;" data-label="Mon"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:65%;" data-label="Tue"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:50%;" data-label="Wed"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:80%;" data-label="Thu"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:55%;" data-label="Fri"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:70%;" data-label="Sat"></div></div>
-                            <div class="chart-bar-wrapper"><div class="chart-bar" style="height:30%;" data-label="Sun"></div></div>
-                        </div>
-                    </div>
-                    <div class="chart-stats-row">
-                        <div class="chart-stat"><span class="chart-stat-val" id="totalLeads">0</span><span class="chart-stat-lbl">Total Leads <span class="stat-hint">(everyone starts somewhere!)</span></span></div>
-                        <div class="chart-stat"><span class="chart-stat-val" id="closedDeals">0</span><span class="chart-stat-lbl">Closed Deals <span class="stat-hint">(first win coming soon!)</span></span></div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalLeads">0</div>
+                        <div class="stat-label">Total Leads</div>
                     </div>
                 </div>
-
-                <!-- MIDDLE: 2x2 Pastel Metric Cards -->
-                <div class="dash-metrics-grid">
-                    <div class="metric-card metric-orange">
-                        <div class="metric-icon"><ion-icon name="people-outline" class="icon-xl"></ion-icon></div>
-                        <div class="metric-value" id="totalLeadsMetric">0</div>
-                        <div class="metric-label">Your Leads <span class="stat-hint">(let's grow this!)</span></div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #764ba2;">
+                        <i class="fas fa-check-circle"></i>
                     </div>
-                    <div class="metric-card metric-green">
-                        <div class="metric-icon"><ion-icon name="checkmark-circle-outline" class="icon-xl"></ion-icon></div>
-                        <div class="metric-value" id="closedDealsMetric">0</div>
-                        <div class="metric-label">Closed Deals <span class="stat-hint">(building momentum...)</span></div>
-                    </div>
-                    <div class="metric-card metric-purple">
-                        <div class="metric-icon"><ion-icon name="time-outline" class="icon-xl"></ion-icon></div>
-                        <div class="metric-value" id="pendingTasks">0</div>
-                        <div class="metric-label">Pending Tasks</div>
-                    </div>
-                    <div class="metric-card metric-blue">
-                        <div class="metric-icon"><ion-icon name="pie-chart-outline" class="icon-xl"></ion-icon></div>
-                        <div class="metric-value" id="conversionRate">—</div>
-                        <div class="metric-label">Conversion</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="closedDeals">0</div>
+                        <div class="stat-label">Closed Deals</div>
                     </div>
                 </div>
-
-                <!-- RIGHT: Quick Actions Card -->
-                <div class="dash-card dash-card-actions">
-                    <div class="dash-card-header">
-                        <h3><ion-icon name="flash-outline" class="icon-sm"></ion-icon> Quick Actions</h3>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #27ae60;">
+                        <i class="fas fa-tasks"></i>
                     </div>
-                    <div class="quick-actions-list">
-                        <button class="quick-action-btn" onclick="openAddLeadModal()">
-                            <div class="qa-icon qa-blue"><ion-icon name="person-add-outline" class="icon-sm"></ion-icon></div>
-                            <span>Bring in a Lead ✨</span>
-                        </button>
-                        <button class="quick-action-btn" onclick="showSection('tasks')">
-                            <div class="qa-icon qa-orange"><ion-icon name="checkbox-outline" class="icon-sm"></ion-icon></div>
-                            <span>Create Task</span>
-                        </button>
-                        <button class="quick-action-btn" onclick="showSection('pipeline')">
-                            <div class="qa-icon qa-green"><ion-icon name="funnel-outline" class="icon-sm"></ion-icon></div>
-                            <span>View Pipeline</span>
-                        </button>
-                        <button class="quick-action-btn" onclick="showSection('analytics')">
-                            <div class="qa-icon qa-purple"><ion-icon name="stats-chart-outline" class="icon-sm"></ion-icon></div>
-                            <span>Reports</span>
-                        </button>
+                    <div class="stat-info">
+                        <div class="stat-value" id="pendingTasks">0</div>
+                        <div class="stat-label">Pending Tasks</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Section: Recent Activity & Tasks as unified table -->
-            <div class="dash-bottom-section">
-                <div class="dash-card dash-card-wide">
-                    <div class="dash-card-header">
-                        <h3><ion-icon name="time-outline" class="icon-sm"></ion-icon> Recent Activity ✨</h3>
-                        <a href="#" class="view-all-link" onclick="showSection('activity-logs')">View all <ion-icon name="arrow-forward-outline" class="icon-sm"></ion-icon></a>
-                    </div>
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-line"></i> Recent Activity</h3>
                     <div id="recentActivity" class="activity-list"></div>
                 </div>
-                <div class="dash-card dash-card-wide">
-                    <div class="dash-card-header">
-                        <h3><ion-icon name="calendar-outline" class="icon-sm"></ion-icon> Your Upcoming Tasks 📝</h3>
-                        <a href="#" class="view-all-link" onclick="showSection('tasks')">View all <ion-icon name="arrow-forward-outline" class="icon-sm"></ion-icon></a>
-                    </div>
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-calendar-check"></i> Upcoming Tasks</h3>
                     <div id="upcomingTasks" class="task-list"></div>
                 </div>
             </div>
@@ -230,13 +167,13 @@
         <!-- Leads Section -->
         <section id="leads-section" class="content-section">
             <div class="section-header">
-                <h2>Potential Customers</h2>
+                <h2>Lead Management</h2>
                 <div class="section-actions">
                     <button class="btn btn-secondary" onclick="openLeadFilters()">
-                        <ion-icon name="filter-outline" class="icon-sm"></ion-icon> Filters
+                        <i class="fas fa-filter"></i> Filters
                     </button>
                     <button class="btn btn-primary" onclick="openAddLeadModal()">
-                        <ion-icon name="add-outline" class="icon-sm"></ion-icon> Add a Lead
+                        <i class="fas fa-plus"></i> Add Lead
                     </button>
                 </div>
             </div>
@@ -264,7 +201,7 @@
             <div class="section-header">
                 <h2>Pipeline</h2>
                 <button class="btn btn-secondary" onclick="openPipelineSettings()">
-                    <ion-icon name="settings-outline" class="icon-sm"></ion-icon> Manage Pipeline
+                    <i class="fas fa-cog"></i> Manage Pipeline
                 </button>
             </div>
             <div class="pipeline-kanban" id="pipelineKanban"></div>
@@ -275,7 +212,7 @@
             <div class="section-header">
                 <h2>Tasks & Reminders</h2>
                 <button class="btn btn-primary" onclick="openAddTaskModal()">
-                    <ion-icon name="add-outline" class="icon-sm"></ion-icon> Add Task
+                    <i class="fas fa-plus"></i> Add Task
                 </button>
             </div>
 
@@ -314,16 +251,16 @@
                         <option value="">Select Lead...</option>
                     </select>
                     <button class="btn btn-success" onclick="openSendEmailModalWithLeadSelect()">
-                        <ion-icon name="mail-outline" class="icon-sm"></ion-icon> Send Email
+                        <i class="fas fa-envelope"></i> Send Email
                     </button>
                     <button class="btn btn-success" onclick="openSendWhatsAppModalWithLeadSelect()">
-                        <ion-icon name="logo-whatsapp" class="icon-sm"></ion-icon> Send WhatsApp
+                        <i class="fab fa-whatsapp"></i> Send WhatsApp
                     </button>
                     <button class="btn btn-secondary" onclick="openLogCallModalWithLeadSelect()">
-                        <ion-icon name="call-outline" class="icon-sm"></ion-icon> Log Call
+                        <i class="fas fa-phone"></i> Log Call
                     </button>
                     <button class="btn btn-secondary" onclick="openLogMeetingModalWithLeadSelect()">
-                        <ion-icon name="people-outline" class="icon-sm"></ion-icon> Log Meeting
+                        <i class="fas fa-handshake"></i> Log Meeting
                     </button>
                 </div>
             </div>
@@ -351,24 +288,24 @@
             <div class="section-header">
                 <h2>Analytics & Reports</h2>
                 <button class="btn btn-secondary" onclick="exportAnalytics()">
-                    <ion-icon name="download-outline" class="icon-sm"></ion-icon> Export Report
+                    <i class="fas fa-download"></i> Export Report
                 </button>
             </div>
 
             <div class="analytics-grid">
                 <div class="analytics-card">
-                    <h3><ion-icon name="pie-chart-outline" class="icon-sm"></ion-icon> Lead Conversion Rate</h3>
+                    <h3><i class="fas fa-chart-pie"></i> Lead Conversion Rate</h3>
                     <div class="chart-placeholder" id="conversionChart">
                         <div class="chart-value">32.5%</div>
                         <div class="chart-label">Conversion Rate</div>
                     </div>
                 </div>
                 <div class="analytics-card">
-                    <h3><ion-icon name="bar-chart-outline" class="icon-sm"></ion-icon> Pipeline Analysis</h3>
+                    <h3><i class="fas fa-chart-bar"></i> Pipeline Analysis</h3>
                     <div class="chart-placeholder" id="pipelineChart"></div>
                 </div>
                 <div class="analytics-card">
-                    <h3><ion-icon name="people-outline" class="icon-sm"></ion-icon> Team Performance</h3>
+                    <h3><i class="fas fa-users"></i> Team Performance</h3>
                     <div class="chart-placeholder" id="teamChart"></div>
                 </div>
             </div>
@@ -379,12 +316,12 @@
             <div class="section-header">
                 <h2>User Management</h2>
                 <button class="btn btn-primary" onclick="openAddUserModal()">
-                    <ion-icon name="person-add-outline" class="icon-sm"></ion-icon> Add User
+                    <i class="fas fa-user-plus"></i> Add User
                 </button>
             </div>
 
             <div class="table-container">
-                <table class="user-management-table">
+                <table class="data-table">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -408,29 +345,25 @@
 
             <div class="settings-tabs">
                 <button class="tab-btn active" onclick="showSettingsTab('profile')">
-                    <ion-icon name="person-outline" class="icon-sm"></ion-icon> Profile
+                    <i class="fas fa-user"></i> Profile
                 </button>
                 <button class="tab-btn" onclick="showSettingsTab('company')">
-                    <ion-icon name="business-outline" class="icon-sm"></ion-icon> Company
+                    <i class="fas fa-building"></i> Company
                 </button>
                 <button class="tab-btn" onclick="showSettingsTab('email')">
-                    <ion-icon name="mail-outline" class="icon-sm"></ion-icon> Email Config
+                    <i class="fas fa-envelope"></i> Email Config
                 </button>
                 <button class="tab-btn" onclick="showSettingsTab('whatsapp')">
-                    <ion-icon name="logo-whatsapp" class="icon-sm"></ion-icon> WhatsApp Config
+                    <i class="fab fa-whatsapp"></i> WhatsApp Config
                 </button>
                 <button class="tab-btn" onclick="showSettingsTab('notifications')">
-                    <ion-icon name="notifications-outline" class="icon-sm"></ion-icon> Notifications
+                    <i class="fas fa-bell"></i> Notifications
                 </button>
                 <button class="tab-btn" onclick="showSettingsTab('customFields')">
-                    <ion-icon name="server-outline" class="icon-sm"></ion-icon> Custom Fields
+                    <i class="fas fa-database"></i> Custom Fields
                 </button>
                 <button class="tab-btn" onclick="showSettingsTab('backup')">
-                    <ion-icon name="cloud-upload-outline" class="icon-sm"></ion-icon> Backup
-                </button>
-                <div style="flex-grow: 1;"></div>
-                <button class="tab-btn text-danger" onclick="logout()" style="color: #ef4444; border: 1px solid #fee2e2; background-color: #fef2f2; margin-left: auto;">
-                    <ion-icon name="log-out-outline" class="icon-sm"></ion-icon> Log Out
+                    <i class="fas fa-cloud-upload-alt"></i> Backup
                 </button>
             </div>
 
@@ -480,10 +413,10 @@
                     <div class="api-key-display">
                         <input type="text" id="apiKeyDisplay" readonly>
                         <button class="btn btn-secondary" onclick="copyApiKey()">
-                            <ion-icon name="copy-outline" class="icon-sm"></ion-icon> Copy
+                            <i class="fas fa-copy"></i> Copy
                         </button>
                         <button class="btn btn-warning" onclick="regenerateApiKey()">
-                            <ion-icon name="refresh-outline" class="icon-sm"></ion-icon> Regenerate
+                            <i class="fas fa-sync"></i> Regenerate
                         </button>
                     </div>
                 </div>
@@ -522,7 +455,7 @@
                     <p class="text-muted">Configure your personal Outlook email to send emails from the CRM</p>
 
                     <div id="emailConfigStatus" class="alert alert-info" style="display: none; margin-bottom: 20px;">
-                        <ion-icon name="information-circle-outline" class="icon-sm"></ion-icon> <span id="emailStatusText"></span>
+                        <i class="fas fa-info-circle"></i> <span id="emailStatusText"></span>
                     </div>
 
                     <form id="emailForm" onsubmit="saveEmailConfig(event)">
@@ -539,14 +472,14 @@
                         </div>
                         <div class="form-actions" style="display: flex; gap: 10px;">
                             <button type="submit" class="btn btn-primary">
-                                <ion-icon name="save-outline" class="icon-sm"></ion-icon> Save & Verify
+                                <i class="fas fa-save"></i> Save & Verify
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="testEmailConfig()">
-                                <ion-icon name="send-outline" class="icon-sm"></ion-icon> Send Test Email
+                                <i class="fas fa-paper-plane"></i> Send Test Email
                             </button>
                             <button type="button" class="btn btn-danger" onclick="removeEmailConfig()"
                                 style="margin-left: auto;">
-                                <ion-icon name="trash-outline" class="icon-sm"></ion-icon> Remove Config
+                                <i class="fas fa-trash"></i> Remove Config
                             </button>
                         </div>
                     </form>
@@ -614,7 +547,7 @@
                     <h3>Custom Fields</h3>
                     <p>Add custom fields to leads for your specific needs</p>
                     <button class="btn btn-secondary" onclick="addCustomField()">
-                        <ion-icon name="add-outline" class="icon-sm"></ion-icon> Add Custom Field
+                        <i class="fas fa-plus"></i> Add Custom Field
                     </button>
                     <div id="customFieldsList" class="custom-fields-list"></div>
                 </div>
@@ -624,7 +557,7 @@
                     <div class="backup-info">
                         <p><strong>Last Backup:</strong> <span id="lastBackupDate">Never</span></p>
                         <button class="btn btn-primary" onclick="triggerBackup()">
-                            <ion-icon name="cloud-upload-outline" class="icon-sm"></ion-icon> Backup Now
+                            <i class="fas fa-cloud-upload-alt"></i> Backup Now
                         </button>
                     </div>
                     <div class="form-check">
@@ -677,26 +610,26 @@
 
             <div class="import-export-grid">
                 <div class="ie-card">
-                    <h3><ion-icon name="document-text-outline" class="icon-sm"></ion-icon> Export Leads</h3>
+                    <h3><i class="fas fa-file-export"></i> Export Leads</h3>
                     <p>Download all leads as CSV</p>
                     <button class="btn btn-success" onclick="exportLeads()">
-                        <ion-icon name="download-outline" class="icon-sm"></ion-icon> Export Leads
+                        <i class="fas fa-download"></i> Export Leads
                     </button>
                 </div>
 
                 <div class="ie-card">
-                    <h3><ion-icon name="bar-chart-outline" class="icon-sm"></ion-icon> Export Analytics</h3>
+                    <h3><i class="fas fa-chart-bar"></i> Export Analytics</h3>
                     <p>Download analytics report</p>
                     <button class="btn btn-success" onclick="exportAnalyticsData()">
-                        <ion-icon name="download-outline" class="icon-sm"></ion-icon> Export Analytics
+                        <i class="fas fa-download"></i> Export Analytics
                     </button>
                 </div>
 
                 <div class="ie-card">
-                    <h3><ion-icon name="time-outline" class="icon-sm"></ion-icon> Export Activity Logs</h3>
+                    <h3><i class="fas fa-history"></i> Export Activity Logs</h3>
                     <p>Download activity history</p>
                     <button class="btn btn-success" onclick="exportActivityLogs()">
-                        <ion-icon name="download-outline" class="icon-sm"></ion-icon> Export Logs
+                        <i class="fas fa-download"></i> Export Logs
                     </button>
                 </div>
             </div>
@@ -710,7 +643,7 @@
                 <h2>Invoices</h2>
                 <div class="header-actions" style="display:flex;gap:8px;">
                     <button class="btn btn-secondary" onclick="showInvoiceTab('customers')">
-                        <ion-icon name="business-outline" class="icon-sm"></ion-icon> Manage Customers
+                        <i class="fas fa-building"></i> Manage Customers
                     </button>
                 </div>
             </div>
@@ -718,23 +651,23 @@
             <!-- Summary Cards -->
             <div class="stats-grid" id="invoiceStatsGrid" style="margin-bottom:18px;">
                 <div class="stat-card">
-                    <div class="stat-icon" style="background:#e8f0fe"><ion-icon name="document-text-outline" class="icon-sm" style="color:#003087"></ion-icon></div>
+                    <div class="stat-icon" style="background:#e8f0fe"><i class="fas fa-file-invoice" style="color:#003087"></i></div>
                     <div class="stat-info"><div class="stat-number" id="invStatTotal">—</div><div class="stat-label">Total Invoices</div></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon" style="background:#e6f4ea"><ion-icon name="checkmark-circle-outline" class="icon-sm" style="color:#2e7d32"></ion-icon></div>
+                    <div class="stat-icon" style="background:#e6f4ea"><i class="fas fa-check-circle" style="color:#2e7d32"></i></div>
                     <div class="stat-info"><div class="stat-number" id="invStatPaid">—</div><div class="stat-label">Paid</div></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon" style="background:#fff3e0"><ion-icon name="time-outline" class="icon-sm" style="color:#ef6c00"></ion-icon></div>
+                    <div class="stat-icon" style="background:#fff3e0"><i class="fas fa-clock" style="color:#ef6c00"></i></div>
                     <div class="stat-info"><div class="stat-number" id="invStatUnpaid">—</div><div class="stat-label">Unpaid</div></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon" style="background:#fce8e8"><ion-icon name="warning-outline" class="icon-sm" style="color:#c62828"></ion-icon></div>
+                    <div class="stat-icon" style="background:#fce8e8"><i class="fas fa-exclamation-triangle" style="color:#c62828"></i></div>
                     <div class="stat-info"><div class="stat-number" id="invStatOverdue">—</div><div class="stat-label">Overdue</div></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon" style="background:#f3e5f5"><ion-icon name="cash-outline" class="icon-sm" style="color:#6a1b9a"></ion-icon></div>
+                    <div class="stat-icon" style="background:#f3e5f5"><i class="fas fa-rupee-sign" style="color:#6a1b9a"></i></div>
                     <div class="stat-info"><div class="stat-number" id="invStatValue">—</div><div class="stat-label">Total Value</div></div>
                 </div>
             </div>
@@ -760,8 +693,8 @@
                     </select>
                     <input type="date" id="invFilterFrom" class="form-control" style="width:150px;" onchange="loadInvoices()" placeholder="From">
                     <input type="date" id="invFilterTo" class="form-control" style="width:150px;" onchange="loadInvoices()" placeholder="To">
-                    <button class="btn btn-secondary" onclick="clearInvoiceFilters()"><ion-icon name="close-outline" class="icon-sm"></ion-icon> Clear</button>
-                    <button class="btn btn-primary" onclick="openCreateInvoiceModal()"><ion-icon name="add-outline" class="icon-sm"></ion-icon> New Invoice</button>
+                    <button class="btn btn-secondary" onclick="clearInvoiceFilters()"><i class="fas fa-times"></i> Clear</button>
+                    <button class="btn btn-primary" onclick="openCreateInvoiceModal()"><i class="fas fa-plus"></i> New Invoice</button>
                 </div>
 
                 <div class="table-container">
@@ -790,7 +723,7 @@
             <div id="invoiceCustomersTab" style="display:none;">
                 <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
                     <button class="btn btn-primary" onclick="openCreateCustomerModal()">
-                        <ion-icon name="add-outline" class="icon-sm"></ion-icon> Add Customer
+                        <i class="fas fa-plus"></i> Add Customer
                     </button>
                 </div>
                 <div class="table-container">
@@ -817,7 +750,7 @@
             <div id="invoiceCompaniesTab" style="display:none;">
                 <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
                     <button class="btn btn-primary" onclick="openCreateBillingCompanyModal()">
-                        <ion-icon name="add-outline" class="icon-sm"></ion-icon> Add Company
+                        <i class="fas fa-plus"></i> Add Company
                     </button>
                 </div>
                 <div class="table-container">
@@ -928,7 +861,7 @@
                         <button type="button" onclick="addCandidateRow()"
                             style="background:#003087;color:white;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.2s;"
                             onmouseover="this.style.background='#0044bb';" onmouseout="this.style.background='#003087';">
-                            <ion-icon name="person-add-outline" class="icon-sm"></ion-icon> Add Candidate
+                            <i class="fas fa-user-plus"></i> Add Candidate
                         </button>
                     </div>
                     <div id="candidateRowsContainer">
@@ -983,7 +916,7 @@
             <div id="viewInvoiceContent" style="padding:0 20px 10px;"></div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeViewInvoiceModal()">Close</button>
-                <button class="btn btn-primary" id="viewInvPdfBtn" onclick=""><ion-icon name="file-pdf-outline" class="icon-sm"></ion-icon> Download PDF</button>
+                <button class="btn btn-primary" id="viewInvPdfBtn" onclick=""><i class="fas fa-file-pdf"></i> Download PDF</button>
             </div>
         </div>
     </div>
@@ -1107,70 +1040,24 @@
     <!-- Modals will be dynamically created in JavaScript -->
     <div id="modalContainer"></div>
 
-    <!-- Modern Login Overlay -->
-    <div id="loginModal" class="login-split-overlay">
-        <div class="login-split-container">
-            <!-- Left Side: Branding / Illustration -->
-            <div class="login-left-panel">
-                <div class="login-illustration-wrapper">
-                    <img src="/images/login-illustration.png" alt="CRM Professional Dashboard Illustration" class="login-illustration" style="max-height: 350px; object-fit: contain; width: 100%; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>Login to CRM</h2>
+            <form id="loginForm" onsubmit="login(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" required>
                 </div>
-                <div class="login-branding" style="margin-top: 25px;">
-                    <h2 class="login-hero-title">Master Maintenance</h2>
-                    <p class="login-hero-text">Maintaining master records is the cornerstone of efficient data management within an organization. By consistently updating and validating these master records, businesses ensure data accuracy and integrity across various systems and processes.</p>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" required>
                 </div>
-                <div class="login-carousel-dots">
-                    <span class="dot active"></span>
-                    <span class="dot"></span>
-                    <span class="dot"></span>
-                    <span class="dot"></span>
-                </div>
-            </div>
-
-            <!-- Right Side: Login Form -->
-            <div class="login-right-panel">
-                <div class="login-form-container">
-                    <div class="brand-header">
-                        <h1 class="brand-title">Brand Name</h1>
-                        <p class="brand-subtitle">About The Brand</p>
-                    </div>
-
-                    <div class="login-welcome">
-                        <h2>Welcome back!</h2>
-                        <p>Empower Relationships, Elevate Results: <strong>Your CRM Solution</strong></p>
-                    </div>
-
-                    <form id="loginForm" onsubmit="login(event)" class="modern-login-form">
-                        <div class="modern-form-group">
-                            <label>User Name</label>
-                            <input type="email" id="loginEmail" placeholder="Enter Your User Name" required>
-                        </div>
-                        
-                        <div class="modern-form-group">
-                            <label>Password</label>
-                            <input type="password" id="loginPassword" placeholder="Enter Your Password" required>
-                        </div>
-                        
-                        <div class="login-options">
-                            <label class="remember-me">
-                                <input type="checkbox">
-                                <span>Remember me</span>
-                            </label>
-                            <a href="#" class="forgot-password">Forgot Password?</a>
-                        </div>
-
-                        <button type="submit" class="btn-modern-login">Login</button>
-                        
-                        <p class="text-center mt-20" style="color: #7f8c8d; font-size: 0.9em; margin-top: 15px;">
-                            Contact your administrator to get access
-                        </p>
-                    </form>
-                    
-                    <div class="login-footer">
-                        <p>&copy; Copyright 2011 Yaqoob Tech Solutions Pvt. Ltd. All rights reserved.</p>
-                    </div>
-                </div>
-            </div>
+                <button type="submit" class="btn btn-primary btn-block">Login</button>
+                <p class="text-center mt-20" style="color: #7f8c8d; font-size: 0.9em;">
+                    Contact your administrator to get access
+                </p>
+            </form>
         </div>
     </div>
 
@@ -1182,7 +1069,7 @@
         </div>
         <div id="notificationsList" class="notifications-list">
             <div class="notification-empty">
-                <ion-icon name="bell-slash-outline" class="icon-sm"></ion-icon>
+                <i class="fas fa-bell-slash"></i>
                 <p>No notifications</p>
             </div>
         </div>
@@ -1622,7 +1509,7 @@
             </div>
             <div class="pipeline-manager">
                 <button class="btn btn-primary mb-20" onclick="addPipelineStage()">
-                    <ion-icon name="add-outline" class="icon-sm"></ion-icon> Add Stage
+                    <i class="fas fa-plus"></i> Add Stage
                 </button>
                 <div id="pipelineStagesList" class="pipeline-stages-list"></div>
             </div>
@@ -1642,7 +1529,7 @@
             </div>
             <div class="pipeline-manager">
                 <button class="btn btn-primary mb-20" onclick="addOperationsStage()">
-                    <ion-icon name="add-outline" class="icon-sm"></ion-icon> Add Stage
+                    <i class="fas fa-plus"></i> Add Stage
                 </button>
                 <div id="operationsPipelineStagesList" class="pipeline-stages-list"></div>
             </div>
@@ -1755,7 +1642,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeSendEmailModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><ion-icon name="send-outline" class="icon-sm"></ion-icon> Send Email</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Email</button>
                 </div>
             </form>
         </div>
@@ -1780,7 +1667,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeSendWhatsAppModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><ion-icon name="logo-whatsapp" class="icon-sm"></ion-icon> Send Message</button>
+                    <button type="submit" class="btn btn-primary"><i class="fab fa-whatsapp"></i> Send Message</button>
                 </div>
             </form>
         </div>
@@ -1809,7 +1696,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeLogCallModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><ion-icon name="call-outline" class="icon-sm"></ion-icon> Log Call</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-phone"></i> Log Call</button>
                 </div>
             </form>
         </div>
@@ -1839,7 +1726,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeLogMeetingModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><ion-icon name="calendar-outline" class="icon-sm"></ion-icon> Log
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-check"></i> Log
                         Meeting</button>
                 </div>
             </form>
@@ -1866,7 +1753,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeUploadFileModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><ion-icon name="cloud-upload-outline" class="icon-sm"></ion-icon> Upload</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Upload</button>
                 </div>
             </form>
         </div>
@@ -1937,7 +1824,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><ion-icon name="save-outline" class="icon-sm"></ion-icon> Save User</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save User</button>
                 </div>
             </form>
         </div>
@@ -1953,7 +1840,7 @@
             <div id="viewUserContent"></div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeViewUserModal()">Close</button>
-                <button type="button" class="btn btn-primary" onclick="editUserFromView()"><ion-icon name="create-outline" class="icon-sm"></ion-icon>
+                <button type="button" class="btn btn-primary" onclick="editUserFromView()"><i class="fas fa-edit"></i>
                     Edit</button>
             </div>
         </div>
@@ -1961,17 +1848,31 @@
 
     <script src="/dashboard.js"></script>
     <script>
-        // Initialize greeting
-        if (typeof updateGreeting === 'function') updateGreeting();
-
-        // Sync greeting name with logged-in user name
-        const _origSetUser = window.setCurrentUser;
-        window.setCurrentUser = function(user) {
-            if (_origSetUser) _origSetUser(user);
-            const nameEl = document.getElementById('greetingName');
-            if (nameEl && user && user.name) nameEl.textContent = user.name;
-            if (typeof updateGreeting === 'function') updateGreeting();
-        };
+        // Sidebar toggle — works on all screen sizes
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (!sidebar) return;
+            // On small screens: use .active class (sidebar slides in/out)
+            if (window.innerWidth <= 1024) {
+                sidebar.classList.toggle('active');
+                if (overlay) overlay.classList.toggle('active');
+            } else {
+                // On large screens: collapse/expand width
+                sidebar.classList.toggle('collapsed');
+            }
+        }
+        // Close sidebar when clicking a nav item on mobile
+        document.querySelectorAll('.nav-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+                if (window.innerWidth <= 1024) {
+                    const sidebar = document.getElementById('sidebar');
+                    const overlay = document.getElementById('sidebarOverlay');
+                    if (sidebar) sidebar.classList.remove('active');
+                    if (overlay) overlay.classList.remove('active');
+                }
+            });
+        });
     </script>
 </body>
 

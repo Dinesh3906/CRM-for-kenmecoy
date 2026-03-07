@@ -33,7 +33,7 @@ const fileFilter = (req, file, cb) => {
     const allowedTypes = /pdf|doc|docx|xls|xlsx|png|jpg|jpeg|gif|txt|csv/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    
+
     if (extname && mimetype) {
         return cb(null, true);
     } else {
@@ -135,14 +135,14 @@ app.post('/api/upload', auth, upload.single('file'), async (req, res) => {
         }
 
         const { leadId, description } = req.body;
-        
+
         if (!leadId) {
             // Delete uploaded file if no leadId provided
             fs.unlinkSync(req.file.path);
             return res.status(400).json({ message: 'Lead ID is required' });
         }
 
-        const lead = await Lead.findOne({ 
+        const lead = await Lead.findOne({
             _id: leadId,
             $or: [
                 { user: req.user._id },
@@ -165,7 +165,7 @@ app.post('/api/upload', auth, upload.single('file'), async (req, res) => {
         };
 
         lead.attachments.push(attachment);
-        
+
         lead.timeline.push({
             action: 'file_attached',
             description: `File attached: ${req.file.originalname}`,
@@ -175,8 +175,8 @@ app.post('/api/upload', auth, upload.single('file'), async (req, res) => {
 
         await lead.save();
 
-        res.json({ 
-            message: 'File uploaded successfully', 
+        res.json({
+            message: 'File uploaded successfully',
             file: attachment,
             lead: lead
         });
