@@ -1,4 +1,4 @@
-﻿// Global Variables
+// Global Variables
 let authToken = localStorage.getItem('authToken') || localStorage.getItem('token');
 let currentUser = null;
 let currentSection = 'dashboard';
@@ -6,6 +6,23 @@ let currentViewOperationId = null;
 
 // API Base URLs
 const API_BASE = '/api';
+
+/**
+ * Initialize Flatpickr for all date inputs
+ */
+function initFlatpickr() {
+    if (typeof flatpickr === 'function') {
+        flatpickr('input[type="date"]', {
+            dateFormat: "d-m-Y",
+            allowInput: true,
+            altInput: true,
+            altFormat: "d-m-Y",
+            onOpen: function(selectedDates, dateStr, instance) {
+                // Remove required attribute temporarily if it interferes with native picker
+            }
+        });
+    }
+}
 
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', () => {
@@ -163,6 +180,7 @@ function showLogin() {
 async function initializeDashboard() {
     try {
         console.log('Initializing dashboard with token:', authToken);
+        initFlatpickr();
 
         // Try to get user from localStorage first
         const storedUser = localStorage.getItem('currentUser');
@@ -1204,7 +1222,7 @@ function renderPipelineChart(data) {
                             <span style="color: #666;">${stage.count} (${percentage}%)</span>
                         </div>
                         <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
-                            <div style="background: #4F46E5; height: 100%; width: ${percentage}%;"></div>
+                            <div style="background: var(--gradient-primary); height: 100%; width: ${percentage}%;"></div>
                         </div>
                         <div style="font-size: 11px; color: #888; margin-top: 2px;">
                             Value: $${(stage.totalValue || 0).toLocaleString()}
@@ -2358,18 +2376,13 @@ async function handleAddTask(e) {
         return;
     }
 
-    if (!leadValue) {
-        showNotification('Please select a lead for the task', 'error');
-        return;
-    }
-
     const taskData = {
         action: formData.get('action'),
         remarks: formData.get('remarks'),
         dueDate: formData.get('dueDate'),
         priority: formData.get('priority'),
         assignedTo: assignedToValue,
-        lead: leadValue,
+        lead: leadValue || undefined,
         status: 'pending'
     };
 
@@ -5092,6 +5105,38 @@ function statusBadge(s) {
     const bg = { paid: '#e6f4ea', unpaid: '#fff3e0', overdue: '#fce8e8', partial: '#e3f2fd' };
     return `<span style="background:${bg[s]||'#eee'};color:${colors[s]||'#333'};padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;text-transform:capitalize;">${s}</span>`;
 }
+ 
+// ── Number to Words Utility ──────────────────────────────────
+function numberToWords(num) {
+    if (num === 0) return 'Zero';
+    if (!num) return '';
+    
+    const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    
+    const format = (n) => {
+        if (n < 20) return a[n];
+        if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '');
+        if (n < 1000) return a[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' and ' + format(n % 100) : '');
+        return '';
+    };
+    
+    const convert = (n) => {
+        if (n === 0) return '';
+        if (n < 1000) return format(n);
+        if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand ' + convert(n % 1000);
+        if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Lakh ' + convert(n % 100000);
+        return convert(Math.floor(n / 10000000)) + ' Crore ' + convert(n % 10000000);
+    };
+    
+    const parts = num.toString().split('.');
+    let str = convert(parseInt(parts[0]));
+    if (parts[1] && parseInt(parts[1]) > 0) {
+        str += ' and ' + convert(parseInt(parts[1])) + ' Paise';
+    }
+    return str.replace(/\s+/g, ' ').trim();
+}
+
 
 // ── Tab switching ─────────────────────────────────────────────
 function showInvoiceTab(tab) {
@@ -5174,11 +5219,11 @@ async function loadInvoices() {
                 <td style="text-align:right;font-weight:600;">${fmtINR(inv.netPayable)}</td>
                 <td>${fmtD(inv.dueDate)}</td>
                 <td>${statusBadge(inv.paymentStatus)}</td>
-                <td style="white-space:nowrap;">
-                    <button class="btn btn-sm btn-secondary" onclick="viewInvoice('${inv._id}')" title="View"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
-                    <button class="btn btn-sm btn-primary" onclick="openEditInvoiceModal('${inv._id}')" title="Edit"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>
-                    <button class="btn btn-sm btn-success" onclick="downloadInvoicePDF('${inv._id}', '${inv.invoiceNumber}')" title="PDF"><ion-icon name="file-pdf-outline" class="icon-sm"></ion-icon></button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${inv._id}')" title="Delete"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>
+                <td style="white-space:nowrap; text-align: right;">
+                    <button class="btn-action btn-view" onclick="viewInvoice('${inv._id}')" title="View"><ion-icon name="eye-outline"></ion-icon></button>
+                    <button class="btn-action btn-edit" onclick="openEditInvoiceModal('${inv._id}')" title="Edit"><ion-icon name="create-outline"></ion-icon></button>
+                    <button class="btn-action btn-pdf" onclick="downloadInvoicePDF('${inv._id}', '${inv.invoiceNumber}')" title="PDF"><ion-icon name="cloud-download-outline"></ion-icon></button>
+                    <button class="btn-action btn-delete" onclick="deleteInvoice('${inv._id}')" title="Delete"><ion-icon name="trash-outline"></ion-icon></button>
                 </td>
             </tr>`;
         }).join('');
@@ -5224,6 +5269,7 @@ function openCreateInvoiceModal() {
     document.getElementById('invoiceEditId').value = '';
     document.getElementById('invoiceForm').reset();
     document.getElementById('invDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('invDueDate').value = new Date().toISOString().split('T')[0];
     document.getElementById('candidateRowsContainer').innerHTML = '';
     document.getElementById('invCalcPreview').style.display = 'none';
     loadInvoiceCustomerDropdown();
@@ -5260,6 +5306,7 @@ async function openEditInvoiceModal(id) {
         setVal('invoiceEditId', inv._id);
         setVal('invNo', inv.invoiceNumber);
         setVal('invDate', inv.invoiceDate ? new Date(inv.invoiceDate).toISOString().split('T')[0] : '');
+        setVal('invDueDate', inv.dueDate ? new Date(inv.dueDate).toISOString().split('T')[0] : '');
         setVal('invDeptCode', inv.deptCode || 'NA');
         setVal('invPoId', inv.poId);
         setVal('invServiceType', inv.serviceType || 'sourcing');
@@ -5313,6 +5360,7 @@ async function handleSaveInvoice(e) {
     const payload = {
         invoiceNumber: document.getElementById('invNo').value.trim(),
         invoiceDate: document.getElementById('invDate').value,
+        dueDate: document.getElementById('invDueDate').value,
         billingCompanyId: document.getElementById('invBillingCompany').value,
         customerId: document.getElementById('invCustomer').value,
         deptCode: document.getElementById('invDeptCode').value,
@@ -5376,53 +5424,98 @@ async function viewInvoice(id) {
         const snap = inv.customerSnapshot || {};
         const isMH = (snap.gstNo || '').startsWith('27');
 
+        const co = inv.billingCompany || {};
+        const coName = co.name || 'Ken McCoy Consulting';
+
         document.getElementById('viewInvoiceContent').innerHTML = `
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:12px 0;">
-                <div>
-                    <h4 style="color:#003087;border-bottom:2px solid #003087;padding-bottom:4px;">Customer</h4>
-                    <p><strong>${snap.name || '—'}</strong></p>
-                    <p style="color:#666;font-size:13px;">${snap.address || ''}</p>
-                    <p>Tel: ${snap.contactNo || '—'} | Email: ${snap.email || '—'}</p>
-                    <p>GSTN: ${snap.gstNo || '—'} | Vendor: ${snap.vendorCode || 'NA'}</p>
-                </div>
-                <div>
-                    <h4 style="color:#003087;border-bottom:2px solid #003087;padding-bottom:4px;">Invoice Details</h4>
-                    <p><strong>Invoice No:</strong> ${inv.invoiceNumber}</p>
-                    <p><strong>Date:</strong> ${fmtD(inv.invoiceDate)}</p>
-                    <p><strong>Due Date:</strong> ${fmtD(inv.dueDate)}</p>
-                    <p><strong>Dept Code:</strong> ${inv.deptCode || 'NA'} | <strong>PO ID:</strong> ${inv.poId || '—'}</p>
-                    <p><strong>Status:</strong> ${statusBadge(inv.paymentStatus)}</p>
+            <div class="inv-modal-header">
+                <h2>TAX INVOICE</h2>
+                <div style="text-align: right;">
+                    <div style="font-size: 22px; font-weight: 700;">${coName}</div>
+                    <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">${co.tagline || ''}</div>
                 </div>
             </div>
-            ${(inv.candidates || []).length ? `
-            <h4 style="color:#003087;">Candidates</h4>
-            <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;">
-                <thead><tr style="background:#003087;color:white;">
-                    <th style="padding:6px;">#</th><th style="padding:6px;">Name</th>
-                    <th style="padding:6px;">Designation</th><th style="padding:6px;">Level</th>
-                    <th style="padding:6px;">Date of Joining</th>
-                </tr></thead>
-                <tbody>${inv.candidates.map((c, i) => `
-                    <tr style="background:${i % 2 ? '#f9f9f9' : 'white'};">
-                        <td style="padding:5px;text-align:center;">${i + 1}</td>
-                        <td style="padding:5px;">${c.name || '—'}</td>
-                        <td style="padding:5px;">${c.designation || '—'}</td>
-                        <td style="padding:5px;">${c.level || '—'}</td>
-                        <td style="padding:5px;">${fmtD(c.dateOfJoining)}</td>
-                    </tr>`).join('')}
-                </tbody>
-            </table>` : ''}
-            <div style="display:flex;justify-content:flex-end;">
-                <table style="font-size:13px;border-collapse:collapse;min-width:280px;">
-                    <tr><td style="padding:4px 12px;color:#666;">Chargeable Salary</td><td style="padding:4px 12px;text-align:right;">${fmtINR(inv.chargeableSalary)}</td></tr>
-                    <tr><td style="padding:4px 12px;color:#666;">Rate (${inv.rate}%)</td><td style="padding:4px 12px;text-align:right;">${fmtINR(inv.chargeableAmount)}</td></tr>
-                    ${isMH ? `<tr><td style="padding:4px 12px;color:#666;">CGST @9%</td><td style="padding:4px 12px;text-align:right;">${fmtINR(inv.cgst)}</td></tr>
-                    <tr><td style="padding:4px 12px;color:#666;">SGST @9%</td><td style="padding:4px 12px;text-align:right;">${fmtINR(inv.sgst)}</td></tr>`
-                    : `<tr><td style="padding:4px 12px;color:#666;">IGST @18%</td><td style="padding:4px 12px;text-align:right;">${fmtINR(inv.igst)}</td></tr>`}
-                    <tr style="background:#e8f0fe;"><td style="padding:6px 12px;font-weight:bold;color:#003087;">Net Payable</td><td style="padding:6px 12px;text-align:right;font-weight:bold;color:#003087;">${fmtINR(inv.netPayable)}</td></tr>
+            <div class="inv-modal-grid">
+                <div class="inv-modal-section">
+                    <div class="inv-modal-section-title">CUSTOMER</div>
+                    <div class="inv-modal-section-content">
+                        <p style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">${snap.name || '—'}</p>
+                        <p style="margin: 6px 0; color: #64748b; font-size: 13px; line-height: 1.5;">${snap.address || ''}</p>
+                        <p style="margin: 10px 0 0 0; font-size: 13px; color: #334155;"><strong>Tel:</strong> ${snap.contactNo || '—'} | <strong>Email:</strong> ${snap.email || '—'}</p>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; color: #334155;"><strong>GSTN:</strong> ${snap.gstNo || '—'}</p>
+                    </div>
+                </div>
+                <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <div style="background: #003087; color: white; padding: 6px 14px; font-weight: 700; font-size: 12px; letter-spacing: 0.5px;">INVOICE DETAILS</div>
+                    <div style="padding: 16px; display: grid; grid-template-columns: auto 1fr; gap: 6px 15px; font-size: 13px; min-height: 120px;">
+                        <span style="color: #64748b;">Invoice No:</span> <strong style="color: #0f172a;">${inv.invoiceNumber}</strong>
+                        <span style="color: #64748b;">Date:</span> <strong style="color: #0f172a;">${fmtD(inv.invoiceDate)}</strong>
+                        <span style="color: #64748b;">Due Date:</span> <strong style="color: #0f172a;">${fmtD(inv.dueDate)}</strong>
+                        <span style="color: #64748b;">Dept Code:</span> <strong style="color: #0f172a;">${inv.deptCode || 'NA'}</strong>
+                        <span style="color: #64748b;">PO ID:</span> <strong style="color: #0f172a;">${inv.poId || '—'}</strong>
+                        <span style="color: #64748b;">Status:</span> ${statusBadge(inv.paymentStatus)}
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 25px; padding: 0 10px;">
+                <h4 style="color:#003087; font-weight: 800; margin-bottom: 12px; font-size: 16px;">Sourcing & Onboarding Charges</h4>
+                <table style="width:100%;border-collapse:collapse;font-size:13px; border: 1px solid #e2e8f0;">
+                    <thead><tr style="background:#003087;color:white; text-align: left;">
+                        <th style="padding:12px;">S.No.</th>
+                        <th style="padding:12px;">Candidate Name</th>
+                        <th style="padding:12px;">Designation / Level</th>
+                        <th style="padding:12px; text-align: right;">Joining Date</th>
+                    </tr></thead>
+                    <tbody>${inv.candidates.map((c, i) => `
+                        <tr style="background:${i % 2 === 0 ? '#f8fafc' : 'white'}; border-top: 1px solid #f1f5f9;">
+                            <td style="padding:12px; color: #64748b;">${i + 1}</td>
+                            <td style="padding:12px; font-weight: 600; color: #1e293b;">${c.name || '—'}</td>
+                            <td style="padding:12px; color: #334155;">${[c.designation, c.level].filter(Boolean).join(' / ') || '—'}</td>
+                            <td style="padding:12px; text-align: right; color: #334155;">${fmtD(c.dateOfJoining)}</td>
+                        </tr>`).join('')}
+                        ${!inv.candidates.length ? `<tr><td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8;">No candidates listed</td></tr>` : ''}
+                    </tbody>
                 </table>
             </div>
-            ${inv.notes ? `<p style="margin-top:10px;color:#666;font-size:13px;"><em>Notes: ${inv.notes}</em></p>` : ''}`;
+
+            <div style="display:grid; grid-template-columns: 1fr 320px; gap: 30px; padding: 0 10px; margin-bottom: 30px;">
+                <div>
+                    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                        <span style="color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 6px; letter-spacing: 0.5px;">Amount in Words</span>
+                        <div style="color: #003087; font-weight: 700; font-size: 15px;">${typeof numberToWords !== 'undefined' ? numberToWords(Math.round(inv.netPayable)) : ''} Only</div>
+                    </div>
+                    
+                    <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 20px;">
+                        <div style="background: #003087; color: white; padding: 6px 14px; font-weight: 700; font-size: 12px;">AUTHORISED SIGNATURE</div>
+                        <div style="padding: 20px; min-height: 120px; display: flex; flex-direction: column; justify-content: flex-end;">
+                            <div style="margin-top: auto;">
+                                <div style="font-weight: 800; color: #003087; font-size: 14px;">For ${coName}</div>
+                                <div style="font-size: 12px; color: #64748b;">(Authorised Signatory & Seal)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <table style="width: 100%; font-size:14px; border-collapse:collapse;">
+                        <tr><td style="padding:8px 0;color:#64748b;">Service Rate (${inv.rate}%)</td><td style="padding:8px 0;text-align:right; font-weight: 600;">${fmtINR(inv.chargeableAmount)}</td></tr>
+                        ${inv.cgst > 0 ? `
+                        <tr><td style="padding:8px 0;color:#64748b;">CGST @9%</td><td style="padding:8px 0;text-align:right;">${fmtINR(inv.cgst)}</td></tr>
+                        <tr><td style="padding:8px 0;color:#64748b;">SGST @9%</td><td style="padding:8px 0;text-align:right;">${fmtINR(inv.sgst)}</td></tr>`
+                        : `<tr><td style="padding:8px 0;color:#64748b;">IGST @18%</td><td style="padding:8px 0;text-align:right;">${fmtINR(inv.igst)}</td></tr>`}
+                        <tr style="border-top: 2px solid #003087; border-bottom: 2px solid #003087; background: #f0f7ff;">
+                            <td style="padding:12px 0;font-weight:800;color:#003087; font-size: 16px;">NET PAYABLE</td>
+                            <td style="padding:12px 0;text-align:right;font-weight:800;color:#003087; font-size: 16px;">${fmtINR(inv.netPayable)}</td>
+                        </tr>
+                    </table>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 4px solid #FF9900; text-align: center;">
+                        <div style="font-size: 11px; color: #64748b; font-style: italic;">Thank you for your business!</div>
+                    </div>
+                </div>
+            </div>
+            </div>
+            <div style="height: 4px; background: #FF9900; margin: 20px -16px -16px -16px; border-radius: 0 0 8px 8px;"></div>`;
 
         document.getElementById('viewInvPdfBtn').onclick = () => downloadInvoicePDF(id, inv.invoiceNumber);
         document.getElementById('viewInvoiceModal').style.display = 'flex';

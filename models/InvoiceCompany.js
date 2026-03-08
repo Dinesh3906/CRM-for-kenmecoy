@@ -11,6 +11,10 @@ const invoiceCompanySchema = new mongoose.Schema({
         trim: true,
         default: 'Sourcing · Recruiting · Onboarding'
     },
+    logo: {
+        type: String, // Path or URL to the logo image
+        trim: true
+    },
     sacCode: {
         type: String,
         trim: true,

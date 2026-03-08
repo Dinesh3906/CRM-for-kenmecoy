@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const companySnapshotSchema = {
     name: String,
     tagline: String,
+    logo: String,
     sacCode: String,
     panNumber: String,
     accountName: String,
@@ -135,6 +136,45 @@ const invoiceSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
+    // Permission & editing tracking
+    isLocked: {
+        type: Boolean,
+        default: false,
+        comment: 'If true, only superadmin can edit financial details. Invoice number and date cannot be changed.'
+    },
+    lastEditedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    lastEditedAt: {
+        type: Date
+    },
+    editHistory: [{
+        editedBy: mongoose.Schema.Types.ObjectId,
+        editedAt: Date,
+        changedFields: [String]
+    }],
+    // Digital signatures
+    signatures: [{
+        signedBy: mongoose.Schema.Types.ObjectId,
+        signedAt: Date,
+        signatoryName: String,
+        signatureImage: String, // Base64 encoded image
+        _id: false
+    }],
+    // Attachments
+    attachments: [{
+        type: {
+            type: String,
+            enum: ['customer-agreement', 'offer-letter', 'other'],
+            default: 'other'
+        },
+        fileName: String,
+        fileUrl: String, // Path or URL to the file
+        uploadedAt: Date,
+        uploadedBy: mongoose.Schema.Types.ObjectId,
+        _id: false
+    }],
     createdAt: {
         type: Date,
         default: Date.now
@@ -170,12 +210,7 @@ invoiceSchema.pre('save', function (next) {
     this.totalAmount = Math.round((this.chargeableAmount + this.totalGst) * 100) / 100;
     this.netPayable = Math.round(this.totalAmount);
 
-    // Auto-set due date = invoice date + 30 days if not provided
-    if (!this.dueDate && this.invoiceDate) {
-        const d = new Date(this.invoiceDate);
-        d.setDate(d.getDate() + 30);
-        this.dueDate = d;
-    }
+    // NOTE: Due date is now mandatory and must be provided by user (no auto-calculation)
 
     next();
 });
