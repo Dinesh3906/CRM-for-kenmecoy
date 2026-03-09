@@ -1,4 +1,4 @@
-// Global Variables
+﻿// Global Variables
 let authToken = localStorage.getItem('authToken') || localStorage.getItem('token');
 let currentUser = null;
 let currentSection = 'dashboard';
@@ -6,23 +6,6 @@ let currentViewOperationId = null;
 
 // API Base URLs
 const API_BASE = '/api';
-
-/**
- * Initialize Flatpickr for all date inputs
- */
-function initFlatpickr() {
-    if (typeof flatpickr === 'function') {
-        flatpickr('input[type="date"]', {
-            dateFormat: "d-m-Y",
-            allowInput: true,
-            altInput: true,
-            altFormat: "d-m-Y",
-            onOpen: function(selectedDates, dateStr, instance) {
-                // Remove required attribute temporarily if it interferes with native picker
-            }
-        });
-    }
-}
 
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', () => {
@@ -180,7 +163,6 @@ function showLogin() {
 async function initializeDashboard() {
     try {
         console.log('Initializing dashboard with token:', authToken);
-        initFlatpickr();
 
         // Try to get user from localStorage first
         const storedUser = localStorage.getItem('currentUser');
@@ -231,7 +213,7 @@ async function initializeDashboard() {
 
         document.getElementById('currentUserName').textContent = userName;
         document.getElementById('currentUserRole').textContent = fullRole;
-;
+        ;
 
         // Apply role-based UI visibility
         applyRoleBasedUI();
@@ -346,25 +328,25 @@ function updateActionButtonsVisibility() {
 
     // Lead creation button
     const createLeadBtn = document.querySelector('[onclick="openAddLeadModal()"]');
-    if (createLeadBtn && !permissions.leads.create) {
+    if (createLeadBtn && (!permissions.leads || !permissions.leads.create) && role !== 'superadmin' && role !== 'admin') {
         createLeadBtn.style.display = 'none';
     }
 
     // Task creation button
     const createTaskBtn = document.querySelector('[onclick="openAddTaskModal()"]');
-    if (createTaskBtn && !permissions.tasks.create) {
+    if (createTaskBtn && (!permissions.tasks || !permissions.tasks.create) && role !== 'superadmin' && role !== 'admin') {
         createTaskBtn.style.display = 'none';
     }
 
     // Export button
-    const exportBtn = document.querySelector('[onclick="exportLeads()"]');
-    if (exportBtn && !permissions.leads.export) {
-        exportBtn.style.display = 'none';
+    const exportBtns = document.querySelectorAll('[onclick="exportLeads()"]');
+    if ((!permissions.leads || !permissions.leads.export) && role !== 'superadmin' && role !== 'admin') {
+        exportBtns.forEach(exportBtn => exportBtn.style.display = 'none');
     }
 
     // User creation button (admin and manager only)
     const createUserBtn = document.querySelector('[onclick="openCreateUserModal()"]');
-    if (createUserBtn && (!permissions.users || !permissions.users.create)) {
+    if (createUserBtn && (!permissions.users || !permissions.users.create) && role !== 'superadmin' && role !== 'admin') {
         createUserBtn.style.display = 'none';
     }
 }
@@ -742,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (leadSearch) {
         leadSearch.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
-            filteredLeadsData = allLeadsData.filter(lead => 
+            filteredLeadsData = allLeadsData.filter(lead =>
                 (lead.companyName && lead.companyName.toLowerCase().includes(searchTerm)) ||
                 (lead.contactPerson && lead.contactPerson.toLowerCase().includes(searchTerm)) ||
                 (lead.email && lead.email.toLowerCase().includes(searchTerm)) ||
@@ -764,14 +746,14 @@ async function loadLeads() {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch leads`);
         }
-        
+
         allLeadsData = await response.json();
-        
+
         // Initial setup for search filtering if input has value
         const searchInput = document.getElementById('leadSearchInput');
         if (searchInput && searchInput.value) {
             const searchTerm = searchInput.value.toLowerCase();
-            filteredLeadsData = allLeadsData.filter(lead => 
+            filteredLeadsData = allLeadsData.filter(lead =>
                 (lead.companyName && lead.companyName.toLowerCase().includes(searchTerm)) ||
                 (lead.contactPerson && lead.contactPerson.toLowerCase().includes(searchTerm)) ||
                 (lead.email && lead.email.toLowerCase().includes(searchTerm)) ||
@@ -780,7 +762,7 @@ async function loadLeads() {
         } else {
             filteredLeadsData = [...allLeadsData];
         }
-        
+
         renderLeadsTable();
     } catch (error) {
         console.error('[CRITICAL] leads error:', error);
@@ -824,19 +806,19 @@ function renderLeadsTable() {
     if (filteredLeadsData.length === 0) {
         emptyState.style.display = 'flex';
         tableElement.style.display = 'none';
-        if(pagination) pagination.style.display = 'none';
+        if (pagination) pagination.style.display = 'none';
         return;
     }
 
     emptyState.style.display = 'none';
     tableElement.style.display = 'table';
-    if(pagination) pagination.style.display = 'flex';
+    if (pagination) pagination.style.display = 'flex';
 
     // Calculate pagination
     const totalPages = Math.ceil(filteredLeadsData.length / leadsPerPage);
     if (currentLeadsPage > totalPages) currentLeadsPage = totalPages;
     if (currentLeadsPage < 1) currentLeadsPage = 1;
-    
+
     const startIndex = (currentLeadsPage - 1) * leadsPerPage;
     const endIndex = Math.min(startIndex + leadsPerPage, filteredLeadsData.length);
     const paginatedLeads = filteredLeadsData.slice(startIndex, endIndex);
@@ -847,7 +829,7 @@ function renderLeadsTable() {
         const assignedUser = lead.assignedTo?.fullName || lead.assignedTo?.email || 'Unassigned';
         const companyName = lead.companyName || 'N/A';
         const companyInitial = companyName !== 'N/A' ? companyName.charAt(0).toUpperCase() : '?';
-        
+
         // Determine status class
         const statusLower = lead.status?.toLowerCase() || '';
         let statusClass = 'status-new';
@@ -873,14 +855,14 @@ function renderLeadsTable() {
                     <div class="modern-actions">
                         <button class="btn-icon" onclick="viewLead('${lead._id}')" title="View"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
                         ${!isStaff ? `<button class="btn-icon" onclick="editLead('${lead._id}')" title="Edit"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>` : ''}
-                        ${['admin', 'superadmin', 'manager'].includes(currentUser?.role) ? 
-                          `<button class="btn-icon delete" onclick="deleteLead('${lead._id}')" title="Delete"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>` : ''}
+                        ${['admin', 'superadmin', 'manager'].includes(currentUser?.role) ?
+                `<button class="btn-icon delete" onclick="deleteLead('${lead._id}')" title="Delete"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>` : ''}
                     </div>
                 </td>
             </tr>
         `;
     }).join('');
-    
+
     renderLeadPagination(totalPages);
 }
 
@@ -888,36 +870,36 @@ function renderLeadPagination(totalPages) {
     const pageNumbersContainer = document.getElementById('leadPageNumbers');
     const prevBtn = document.getElementById('prevPageBtn');
     const nextBtn = document.getElementById('nextPageBtn');
-    
+
     if (!pageNumbersContainer || !prevBtn || !nextBtn) return;
-    
+
     prevBtn.disabled = currentLeadsPage === 1;
     nextBtn.disabled = currentLeadsPage === totalPages;
-    
+
     let pagesHtml = '';
-    
+
     // Simplistic pagination logic (show all or truncate intelligently if many pages)
     let startPage = Math.max(1, currentLeadsPage - 2);
     let endPage = Math.min(totalPages, startPage + 4);
-    
+
     if (endPage - startPage < 4) {
         startPage = Math.max(1, endPage - 4);
     }
-    
+
     if (startPage > 1) {
         pagesHtml += `<button class="btn-page" onclick="goToLeadPage(1)">1</button>`;
         if (startPage > 2) pagesHtml += `<span style="color:#9CA3AF;">...</span>`;
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
         pagesHtml += `<button class="btn-page ${i === currentLeadsPage ? 'active' : ''}" onclick="goToLeadPage(${i})">${i}</button>`;
     }
-    
+
     if (endPage < totalPages) {
         if (endPage < totalPages - 1) pagesHtml += `<span style="color:#9CA3AF;">...</span>`;
         pagesHtml += `<button class="btn-page" onclick="goToLeadPage(${totalPages})">${totalPages}</button>`;
     }
-    
+
     pageNumbersContainer.innerHTML = pagesHtml;
 }
 
@@ -956,7 +938,7 @@ async function loadTasks() {
         if (tasks.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7">
                 <div class="empty-state" style="border:none; padding:40px 10px;">
-                  <div class="empty-icon">🌱</div>
+                  <div class="empty-icon"><ion-icon name="leaf-outline" style="font-size:40px;color:#6ee7b7;"></ion-icon></div>
                   <h3>No tasks yet!</h3>
                   <p>A clear schedule! Ready to plan your next move?</p>
                 </div>
@@ -1005,7 +987,7 @@ async function loadCommunications() {
         if (comms.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7">
                 <div class="empty-state" style="border:none; padding:40px 10px;">
-                  <div class="empty-icon">👋</div>
+                  <div class="empty-icon"><ion-icon name="chatbubble-ellipses-outline" style="font-size:40px;color:#93c5fd;"></ion-icon></div>
                   <h3>Quiet around here!</h3>
                   <p>Every great relationship starts with a hello. Time to start the conversation!</p>
                 </div>
@@ -1019,7 +1001,7 @@ async function loadCommunications() {
                 <td>${comm.lead?.companyName || comm.lead?.contactPerson || 'N/A'}</td>
                 <td>${comm.subject || comm.content?.substring(0, 50) || 'N/A'}</td>
                 <td>${comm.direction}</td>
-                <td><span class="badge badge-${comm.status === 'sent' ? 'success' : comm.status === 'failed' ? 'danger' : comm.status === 'pending' ? 'warning' : 'info'}" title="${comm.status === 'pending' ? 'Service not configured' : ''}">${comm.status}${comm.status === 'pending' ? ' ⚠️' : ''}</span></td>
+                <td><span class="badge badge-${comm.status === 'sent' ? 'success' : comm.status === 'failed' ? 'danger' : comm.status === 'pending' ? 'warning' : 'info'}" title="${comm.status === 'pending' ? 'Service not configured' : ''}"><br>${comm.status}${comm.status === 'pending' ? ' <ion-icon name="warning-outline" style="vertical-align:middle;"></ion-icon>' : ''}</span></td>
                 <td>${formatDate(comm.createdAt)}</td>
                 <td>
                     <button class="btn btn-sm" onclick="viewCommunication('${comm._id}')"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
@@ -1085,10 +1067,11 @@ async function loadActivityLogs() {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
-        const logs = await response.json();
+        const data = await response.json();
+        const logs = data.logs || data;
         const tbody = document.getElementById('activityLogsTableBody');
 
-        if (logs.length === 0) {
+        if (!logs || logs.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="text-center">No activity logs found</td></tr>';
             return;
         }
@@ -1222,7 +1205,7 @@ function renderPipelineChart(data) {
                             <span style="color: #666;">${stage.count} (${percentage}%)</span>
                         </div>
                         <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
-                            <div style="background: var(--gradient-primary); height: 100%; width: ${percentage}%;"></div>
+                            <div style="background: #4F46E5; height: 100%; width: ${percentage}%;"></div>
                         </div>
                         <div style="font-size: 11px; color: #888; margin-top: 2px;">
                             Value: $${(stage.totalValue || 0).toLocaleString()}
@@ -1248,7 +1231,7 @@ function renderTeamChart(data) {
             ${data.slice(0, 5).map((member, index) => `
                 <div style="margin-bottom: 12px; padding: 8px; background: ${index === 0 ? '#FEF3C7' : '#f9fafb'}; border-radius: 6px;">
                     <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">
-                        ${index === 0 ? '🏆 ' : ''}${member.user.fullName || member.user.username}
+                        ${index === 0 ? '<ion-icon name="trophy-outline" style="color:#d97706;vertical-align:middle;"></ion-icon> ' : ''}${member.user.fullName || member.user.username}
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; color: #666;">
                         <div>Leads: ${member.metrics.totalLeads}</div>
@@ -1585,34 +1568,34 @@ function formatDate(date) {
 }
 
 const friendlyMessages = {
-  success: [
-    "Nice work! 🎯",
-    "Done and done! ✅",
-    "You got it! 💪",
-    "Perfect! 🌟"
-  ],
-  error: [
-    "Oops! That didn't work 😅",
-    "Hmm, let's try again ",
-    "Not quite right yet 💭"
-  ],
-  welcome: [
-    "Welcome back! 👋",
-    "Great to see you! ☀️",
-    "Ready to make things happen? 🚀"
-  ]
+    success: [
+        "Nice work!",
+        "Done and done!",
+        "You got it!",
+        "Perfect!"
+    ],
+    error: [
+        "Oops! That didn't work.",
+        "Hmm, let's try again.",
+        "Not quite right yet."
+    ],
+    welcome: [
+        "Welcome back!",
+        "Great to see you!",
+        "Ready to make things happen?"
+    ]
 };
 
 function getFriendlyMessage(type) {
-  const msgs = friendlyMessages[type] || [type];
-  return msgs[Math.floor(Math.random() * msgs.length)];
+    const msgs = friendlyMessages[type] || [type];
+    return msgs[Math.floor(Math.random() * msgs.length)];
 }
 
 function showNotification(message, type = 'info') {
     // Optionally prefix with a friendly message for simple notifications
     let finalMessage = message;
     if (message === 'Lead created successfully') {
-        finalMessage = '✨ Lead added! You\'re growing!';
+        finalMessage = 'Lead added! You\'re growing!';
     } else if (message === 'Task deleted') {
         finalMessage = 'Task removed';
     } else if (message.includes('Error')) {
@@ -1621,7 +1604,7 @@ function showNotification(message, type = 'info') {
 
     const notification = document.createElement('div');
     const isCelebration = (type === 'celebration');
-    
+
     if (isCelebration) {
         notification.className = 'celebration-toast';
     } else {
@@ -1639,12 +1622,12 @@ function showNotification(message, type = 'info') {
             font-weight: 500;
         `;
     }
-    
+
     if (isCelebration) {
         // Special celebration toast structure
         notification.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px;">
-                <span style="font-size:24px;">🎉</span>
+                <ion-icon name="trophy-outline" style="font-size:24px;color:#f59e0b;"></ion-icon>
                 <div>
                     <div style="font-weight:bold; font-size:16px;">Congratulations!</div>
                     <div style="font-size:14px; opacity:0.9;">${finalMessage}</div>
@@ -1735,11 +1718,11 @@ function renderPipeline() {
         const columnLeads = allLeadsData.filter(lead => lead.status === column.id);
         const leadsHTML = columnLeads.map(lead => {
             const assignedUser = lead.assignedTo?.fullName || lead.assignedTo?.email || 'Unassigned';
-            
+
             // Check if user has permission to delete (admin/superadmin/manager)
             const canDelete = ['admin', 'superadmin', 'manager'].includes(currentUser?.role);
             // Only show delete button if lead is in 'new' column and user has permission
-            const deleteHtml = (lead.status === 'new' && canDelete) 
+            const deleteHtml = (lead.status === 'new' && canDelete)
                 ? `<button onclick="deleteLead('${lead._id}')" class="btn-icon" style="color: #ef4444;" title="Delete"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>`
                 : '';
 
@@ -2331,7 +2314,7 @@ async function handleEditLead(e) {
         if (!response.ok) throw new Error('Failed to update lead');
 
         if (leadData.status === 'won' || leadData.status === 'qualified') {
-            showNotification('Deal closed! That\'s amazing work! 🌟', 'celebration');
+            showNotification("Deal closed! That's amazing work!", 'celebration');
         } else {
             showNotification('Lead updated successfully', 'success');
         }
@@ -2376,13 +2359,18 @@ async function handleAddTask(e) {
         return;
     }
 
+    if (!leadValue) {
+        showNotification('Please select a lead for the task', 'error');
+        return;
+    }
+
     const taskData = {
         action: formData.get('action'),
         remarks: formData.get('remarks'),
         dueDate: formData.get('dueDate'),
         priority: formData.get('priority'),
         assignedTo: assignedToValue,
-        lead: leadValue || undefined,
+        lead: leadValue,
         status: 'pending'
     };
 
@@ -3405,7 +3393,7 @@ async function deleteLead(id) {
         });
 
         let data = {};
-        try { data = await response.json(); } catch(e) {}
+        try { data = await response.json(); } catch (e) { }
 
         if (!response.ok) {
             throw new Error(data.message || ('Server error ' + response.status));
@@ -4522,7 +4510,7 @@ async function loadTaskLeads() {
                         return `<option value="${l._id}" data-assigned-to="${assignedToId}">${l.companyName} - ${l.contactPerson}</option>`;
                     }).join('');
             } else {
-                leadSelect.innerHTML = '<option value="" disabled selected style="color: #ef4444; font-weight: 600; background-color: #fef2f2;">⚠️ No leads available (Please add a lead first)</option>';
+                leadSelect.innerHTML = '<option value="" disabled selected style="color: #ef4444; font-weight: 600; background-color: #fef2f2;">No leads available (Please add a lead first)</option>';
             }
 
             // Add change listener to auto-select the lead's assigned user
@@ -5103,40 +5091,8 @@ function fmtD(d) {
 function statusBadge(s) {
     const colors = { paid: '#2e7d32', unpaid: '#ef6c00', overdue: '#c62828', partial: '#1565c0' };
     const bg = { paid: '#e6f4ea', unpaid: '#fff3e0', overdue: '#fce8e8', partial: '#e3f2fd' };
-    return `<span style="background:${bg[s]||'#eee'};color:${colors[s]||'#333'};padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;text-transform:capitalize;">${s}</span>`;
+    return `<span style="background:${bg[s] || '#eee'};color:${colors[s] || '#333'};padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;text-transform:capitalize;">${s}</span>`;
 }
- 
-// ── Number to Words Utility ──────────────────────────────────
-function numberToWords(num) {
-    if (num === 0) return 'Zero';
-    if (!num) return '';
-    
-    const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-    
-    const format = (n) => {
-        if (n < 20) return a[n];
-        if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '');
-        if (n < 1000) return a[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' and ' + format(n % 100) : '');
-        return '';
-    };
-    
-    const convert = (n) => {
-        if (n === 0) return '';
-        if (n < 1000) return format(n);
-        if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand ' + convert(n % 1000);
-        if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Lakh ' + convert(n % 100000);
-        return convert(Math.floor(n / 10000000)) + ' Crore ' + convert(n % 10000000);
-    };
-    
-    const parts = num.toString().split('.');
-    let str = convert(parseInt(parts[0]));
-    if (parts[1] && parseInt(parts[1]) > 0) {
-        str += ' and ' + convert(parseInt(parts[1])) + ' Paise';
-    }
-    return str.replace(/\s+/g, ' ').trim();
-}
-
 
 // ── Tab switching ─────────────────────────────────────────────
 function showInvoiceTab(tab) {
@@ -5219,11 +5175,11 @@ async function loadInvoices() {
                 <td style="text-align:right;font-weight:600;">${fmtINR(inv.netPayable)}</td>
                 <td>${fmtD(inv.dueDate)}</td>
                 <td>${statusBadge(inv.paymentStatus)}</td>
-                <td style="white-space:nowrap; text-align: right;">
-                    <button class="btn-action btn-view" onclick="viewInvoice('${inv._id}')" title="View"><ion-icon name="eye-outline"></ion-icon></button>
-                    <button class="btn-action btn-edit" onclick="openEditInvoiceModal('${inv._id}')" title="Edit"><ion-icon name="create-outline"></ion-icon></button>
-                    <button class="btn-action btn-pdf" onclick="downloadInvoicePDF('${inv._id}', '${inv.invoiceNumber}')" title="PDF"><ion-icon name="cloud-download-outline"></ion-icon></button>
-                    <button class="btn-action btn-delete" onclick="deleteInvoice('${inv._id}')" title="Delete"><ion-icon name="trash-outline"></ion-icon></button>
+                <td style="white-space:nowrap;">
+                    <button class="btn btn-sm btn-secondary" onclick="viewInvoice('${inv._id}')" title="View"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-primary" onclick="openEditInvoiceModal('${inv._id}')" title="Edit"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-success" onclick="downloadInvoicePDF('${inv._id}', '${inv.invoiceNumber}')" title="PDF"><ion-icon name="file-pdf-outline" class="icon-sm"></ion-icon></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${inv._id}')" title="Delete"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>
                 </td>
             </tr>`;
         }).join('');
@@ -5269,7 +5225,6 @@ function openCreateInvoiceModal() {
     document.getElementById('invoiceEditId').value = '';
     document.getElementById('invoiceForm').reset();
     document.getElementById('invDate').value = new Date().toISOString().split('T')[0];
-    document.getElementById('invDueDate').value = new Date().toISOString().split('T')[0];
     document.getElementById('candidateRowsContainer').innerHTML = '';
     document.getElementById('invCalcPreview').style.display = 'none';
     loadInvoiceCustomerDropdown();
@@ -5306,7 +5261,6 @@ async function openEditInvoiceModal(id) {
         setVal('invoiceEditId', inv._id);
         setVal('invNo', inv.invoiceNumber);
         setVal('invDate', inv.invoiceDate ? new Date(inv.invoiceDate).toISOString().split('T')[0] : '');
-        setVal('invDueDate', inv.dueDate ? new Date(inv.dueDate).toISOString().split('T')[0] : '');
         setVal('invDeptCode', inv.deptCode || 'NA');
         setVal('invPoId', inv.poId);
         setVal('invServiceType', inv.serviceType || 'sourcing');
@@ -5360,7 +5314,6 @@ async function handleSaveInvoice(e) {
     const payload = {
         invoiceNumber: document.getElementById('invNo').value.trim(),
         invoiceDate: document.getElementById('invDate').value,
-        dueDate: document.getElementById('invDueDate').value,
         billingCompanyId: document.getElementById('invBillingCompany').value,
         customerId: document.getElementById('invCustomer').value,
         deptCode: document.getElementById('invDeptCode').value,
@@ -5424,98 +5377,53 @@ async function viewInvoice(id) {
         const snap = inv.customerSnapshot || {};
         const isMH = (snap.gstNo || '').startsWith('27');
 
-        const co = inv.billingCompany || {};
-        const coName = co.name || 'Ken McCoy Consulting';
-
         document.getElementById('viewInvoiceContent').innerHTML = `
-            <div class="inv-modal-header">
-                <h2>TAX INVOICE</h2>
-                <div style="text-align: right;">
-                    <div style="font-size: 22px; font-weight: 700;">${coName}</div>
-                    <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">${co.tagline || ''}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:12px 0;">
+                <div>
+                    <h4 style="color:#003087;border-bottom:2px solid #003087;padding-bottom:4px;">Customer</h4>
+                    <p><strong>${snap.name || '—'}</strong></p>
+                    <p style="color:#666;font-size:13px;">${snap.address || ''}</p>
+                    <p>Tel: ${snap.contactNo || '—'} | Email: ${snap.email || '—'}</p>
+                    <p>GSTN: ${snap.gstNo || '—'} | Vendor: ${snap.vendorCode || 'NA'}</p>
+                </div>
+                <div>
+                    <h4 style="color:#003087;border-bottom:2px solid #003087;padding-bottom:4px;">Invoice Details</h4>
+                    <p><strong>Invoice No:</strong> ${inv.invoiceNumber}</p>
+                    <p><strong>Date:</strong> ${fmtD(inv.invoiceDate)}</p>
+                    <p><strong>Due Date:</strong> ${fmtD(inv.dueDate)}</p>
+                    <p><strong>Dept Code:</strong> ${inv.deptCode || 'NA'} | <strong>PO ID:</strong> ${inv.poId || '—'}</p>
+                    <p><strong>Status:</strong> ${statusBadge(inv.paymentStatus)}</p>
                 </div>
             </div>
-            <div class="inv-modal-grid">
-                <div class="inv-modal-section">
-                    <div class="inv-modal-section-title">CUSTOMER</div>
-                    <div class="inv-modal-section-content">
-                        <p style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">${snap.name || '—'}</p>
-                        <p style="margin: 6px 0; color: #64748b; font-size: 13px; line-height: 1.5;">${snap.address || ''}</p>
-                        <p style="margin: 10px 0 0 0; font-size: 13px; color: #334155;"><strong>Tel:</strong> ${snap.contactNo || '—'} | <strong>Email:</strong> ${snap.email || '—'}</p>
-                        <p style="margin: 4px 0 0 0; font-size: 13px; color: #334155;"><strong>GSTN:</strong> ${snap.gstNo || '—'}</p>
-                    </div>
-                </div>
-                <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-                    <div style="background: #003087; color: white; padding: 6px 14px; font-weight: 700; font-size: 12px; letter-spacing: 0.5px;">INVOICE DETAILS</div>
-                    <div style="padding: 16px; display: grid; grid-template-columns: auto 1fr; gap: 6px 15px; font-size: 13px; min-height: 120px;">
-                        <span style="color: #64748b;">Invoice No:</span> <strong style="color: #0f172a;">${inv.invoiceNumber}</strong>
-                        <span style="color: #64748b;">Date:</span> <strong style="color: #0f172a;">${fmtD(inv.invoiceDate)}</strong>
-                        <span style="color: #64748b;">Due Date:</span> <strong style="color: #0f172a;">${fmtD(inv.dueDate)}</strong>
-                        <span style="color: #64748b;">Dept Code:</span> <strong style="color: #0f172a;">${inv.deptCode || 'NA'}</strong>
-                        <span style="color: #64748b;">PO ID:</span> <strong style="color: #0f172a;">${inv.poId || '—'}</strong>
-                        <span style="color: #64748b;">Status:</span> ${statusBadge(inv.paymentStatus)}
-                    </div>
-                </div>
-            </div>
-
-            <div style="margin-bottom: 25px; padding: 0 10px;">
-                <h4 style="color:#003087; font-weight: 800; margin-bottom: 12px; font-size: 16px;">Sourcing & Onboarding Charges</h4>
-                <table style="width:100%;border-collapse:collapse;font-size:13px; border: 1px solid #e2e8f0;">
-                    <thead><tr style="background:#003087;color:white; text-align: left;">
-                        <th style="padding:12px;">S.No.</th>
-                        <th style="padding:12px;">Candidate Name</th>
-                        <th style="padding:12px;">Designation / Level</th>
-                        <th style="padding:12px; text-align: right;">Joining Date</th>
-                    </tr></thead>
-                    <tbody>${inv.candidates.map((c, i) => `
-                        <tr style="background:${i % 2 === 0 ? '#f8fafc' : 'white'}; border-top: 1px solid #f1f5f9;">
-                            <td style="padding:12px; color: #64748b;">${i + 1}</td>
-                            <td style="padding:12px; font-weight: 600; color: #1e293b;">${c.name || '—'}</td>
-                            <td style="padding:12px; color: #334155;">${[c.designation, c.level].filter(Boolean).join(' / ') || '—'}</td>
-                            <td style="padding:12px; text-align: right; color: #334155;">${fmtD(c.dateOfJoining)}</td>
-                        </tr>`).join('')}
-                        ${!inv.candidates.length ? `<tr><td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8;">No candidates listed</td></tr>` : ''}
-                    </tbody>
+            ${(inv.candidates || []).length ? `
+            <h4 style="color:#003087;">Candidates</h4>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px;">
+                <thead><tr style="background:#003087;color:white;">
+                    <th style="padding:6px;">#</th><th style="padding:6px;">Name</th>
+                    <th style="padding:6px;">Designation</th><th style="padding:6px;">Level</th>
+                    <th style="padding:6px;">Date of Joining</th>
+                </tr></thead>
+                <tbody>${inv.candidates.map((c, i) => `
+                    <tr style="background:${i % 2 ? '#f9f9f9' : 'white'};">
+                        <td style="padding:5px;text-align:center;">${i + 1}</td>
+                        <td style="padding:5px;">${c.name || '—'}</td>
+                        <td style="padding:5px;">${c.designation || '—'}</td>
+                        <td style="padding:5px;">${c.level || '—'}</td>
+                        <td style="padding:5px;">${fmtD(c.dateOfJoining)}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>` : ''}
+            <div style="display:flex;justify-content:flex-end;">
+                <table style="font-size:13px;border-collapse:collapse;min-width:280px;">
+                    <tr><td style="padding:4px 12px;color:#666;">Chargeable Salary</td><td style="padding:4px 12px;text-align:right;">${fmtINR(inv.chargeableSalary)}</td></tr>
+                    <tr><td style="padding:4px 12px;color:#666;">Rate (${inv.rate}%)</td><td style="padding:4px 12px;text-align:right;">${fmtINR(inv.chargeableAmount)}</td></tr>
+                    ${isMH ? `<tr><td style="padding:4px 12px;color:#666;">CGST @9%</td><td style="padding:4px 12px;text-align:right;">${fmtINR(inv.cgst)}</td></tr>
+                    <tr><td style="padding:4px 12px;color:#666;">SGST @9%</td><td style="padding:4px 12px;text-align:right;">${fmtINR(inv.sgst)}</td></tr>`
+                : `<tr><td style="padding:4px 12px;color:#666;">IGST @18%</td><td style="padding:4px 12px;text-align:right;">${fmtINR(inv.igst)}</td></tr>`}
+                    <tr style="background:#e8f0fe;"><td style="padding:6px 12px;font-weight:bold;color:#003087;">Net Payable</td><td style="padding:6px 12px;text-align:right;font-weight:bold;color:#003087;">${fmtINR(inv.netPayable)}</td></tr>
                 </table>
             </div>
-
-            <div style="display:grid; grid-template-columns: 1fr 320px; gap: 30px; padding: 0 10px; margin-bottom: 30px;">
-                <div>
-                    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-                        <span style="color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 6px; letter-spacing: 0.5px;">Amount in Words</span>
-                        <div style="color: #003087; font-weight: 700; font-size: 15px;">${typeof numberToWords !== 'undefined' ? numberToWords(Math.round(inv.netPayable)) : ''} Only</div>
-                    </div>
-                    
-                    <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 20px;">
-                        <div style="background: #003087; color: white; padding: 6px 14px; font-weight: 700; font-size: 12px;">AUTHORISED SIGNATURE</div>
-                        <div style="padding: 20px; min-height: 120px; display: flex; flex-direction: column; justify-content: flex-end;">
-                            <div style="margin-top: auto;">
-                                <div style="font-weight: 800; color: #003087; font-size: 14px;">For ${coName}</div>
-                                <div style="font-size: 12px; color: #64748b;">(Authorised Signatory & Seal)</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <table style="width: 100%; font-size:14px; border-collapse:collapse;">
-                        <tr><td style="padding:8px 0;color:#64748b;">Service Rate (${inv.rate}%)</td><td style="padding:8px 0;text-align:right; font-weight: 600;">${fmtINR(inv.chargeableAmount)}</td></tr>
-                        ${inv.cgst > 0 ? `
-                        <tr><td style="padding:8px 0;color:#64748b;">CGST @9%</td><td style="padding:8px 0;text-align:right;">${fmtINR(inv.cgst)}</td></tr>
-                        <tr><td style="padding:8px 0;color:#64748b;">SGST @9%</td><td style="padding:8px 0;text-align:right;">${fmtINR(inv.sgst)}</td></tr>`
-                        : `<tr><td style="padding:8px 0;color:#64748b;">IGST @18%</td><td style="padding:8px 0;text-align:right;">${fmtINR(inv.igst)}</td></tr>`}
-                        <tr style="border-top: 2px solid #003087; border-bottom: 2px solid #003087; background: #f0f7ff;">
-                            <td style="padding:12px 0;font-weight:800;color:#003087; font-size: 16px;">NET PAYABLE</td>
-                            <td style="padding:12px 0;text-align:right;font-weight:800;color:#003087; font-size: 16px;">${fmtINR(inv.netPayable)}</td>
-                        </tr>
-                    </table>
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 4px solid #FF9900; text-align: center;">
-                        <div style="font-size: 11px; color: #64748b; font-style: italic;">Thank you for your business!</div>
-                    </div>
-                </div>
-            </div>
-            </div>
-            <div style="height: 4px; background: #FF9900; margin: 20px -16px -16px -16px; border-radius: 0 0 8px 8px;"></div>`;
+            ${inv.notes ? `<p style="margin-top:10px;color:#666;font-size:13px;"><em>Notes: ${inv.notes}</em></p>` : ''}`;
 
         document.getElementById('viewInvPdfBtn').onclick = () => downloadInvoicePDF(id, inv.invoiceNumber);
         document.getElementById('viewInvoiceModal').style.display = 'flex';
@@ -5577,22 +5485,22 @@ function addCandidateRow(data = {}) {
                 <ion-icon name="trash-alt-outline" class="icon-sm"></ion-icon> Remove
             </button>
         </div>
-        <div style="display:grid;grid-template-columns:2fr 1.5fr 0.8fr 1.2fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:2fr 1.5fr 0.8fr 1.2fr;gap:12px;margin-top:10px;">
             <div>
-                <label style="font-size:11px;color:#666;font-weight:600;display:block;margin-bottom:3px;">Full Name *</label>
-                <input type="text" class="form-control cand-name" placeholder="e.g. Ravi Sharma" value="${data.name || ''}" style="font-size:13px;">
+                <label style="font-size:13px;color:#4a5568;font-weight:600;display:block;margin-bottom:6px;">Full Name *</label>
+                <input type="text" class="form-control cand-name" placeholder="e.g. Ravi Sharma" value="${data.name || ''}" style="font-size:15px;padding:10px;">
             </div>
             <div>
-                <label style="font-size:11px;color:#666;font-weight:600;display:block;margin-bottom:3px;">Designation</label>
-                <input type="text" class="form-control cand-desig" placeholder="e.g. Sr. Engineer" value="${data.designation || ''}" style="font-size:13px;">
+                <label style="font-size:13px;color:#4a5568;font-weight:600;display:block;margin-bottom:6px;">Designation</label>
+                <input type="text" class="form-control cand-desig" placeholder="e.g. Sr. Engineer" value="${data.designation || ''}" style="font-size:15px;padding:10px;">
             </div>
             <div>
-                <label style="font-size:11px;color:#666;font-weight:600;display:block;margin-bottom:3px;">Level</label>
-                <input type="text" class="form-control cand-level" placeholder="e.g. L3" value="${data.level || ''}" style="font-size:13px;">
+                <label style="font-size:13px;color:#4a5568;font-weight:600;display:block;margin-bottom:6px;">Level</label>
+                <input type="text" class="form-control cand-level" placeholder="e.g. L3" value="${data.level || ''}" style="font-size:15px;padding:10px;">
             </div>
             <div>
-                <label style="font-size:11px;color:#666;font-weight:600;display:block;margin-bottom:3px;">Date of Joining</label>
-                <input type="date" class="form-control cand-doj" value="${data.dateOfJoining ? new Date(data.dateOfJoining).toISOString().split('T')[0] : ''}" style="font-size:13px;">
+                <label style="font-size:13px;color:#4a5568;font-weight:600;display:block;margin-bottom:6px;">Date of Joining</label>
+                <input type="date" class="form-control cand-doj" value="${data.dateOfJoining ? new Date(data.dateOfJoining).toISOString().split('T')[0] : ''}" style="font-size:15px;padding:10px;">
             </div>
         </div>`;
     container.appendChild(div);
@@ -5952,7 +5860,7 @@ function toggleSidebar() {
         // Desktop behavior: Collapse/Expand
         sidebar.classList.toggle('collapsed');
         if (mainContent) mainContent.classList.toggle('collapsed');
-        
+
         // Update icon and save state
         if (sidebar.classList.contains('collapsed')) {
             if (toggleIcon) toggleIcon.setAttribute('name', 'chevron-forward-outline');

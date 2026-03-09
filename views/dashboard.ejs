@@ -10,7 +10,6 @@
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
       .icon-sm { font-size: 16px; width: 16px; height: 16px; }
       .icon-md { font-size: 20px; width: 20px; height: 20px; }
@@ -128,7 +127,7 @@
             <!-- Greeting Header -->
             <div class="greeting-header">
                 <div class="greeting-text">
-                    <h1 id="greetingTitle">Good morning, <span id="greetingName">Samal</span>! ☀️ Ready to crush today's goals?</h1>
+                    <h1 id="greetingTitle">Good morning, <span id="greetingName">Samal</span>! <ion-icon name="sunny-outline" class="icon-sm" style="color:#f59e0b;"></ion-icon> Ready to crush today's goals?</h1>
                     <p>Here's what's happening in your business right now.</p>
                 </div>
                 <button class="btn btn-primary" onclick="refreshDashboard()">
@@ -187,79 +186,52 @@
                     </div>
                 </div>
 
-                <!-- MIDDLE: 2x2 Professional Metric Cards -->
+                <!-- MIDDLE: 2x2 Pastel Metric Cards -->
                 <div class="dash-metrics-grid">
-                    <div class="metric-card metric-primary">
+                    <div class="metric-card metric-orange">
                         <div class="metric-icon"><ion-icon name="people-outline" class="icon-xl"></ion-icon></div>
                         <div class="metric-value" id="totalLeadsMetric">0</div>
-                        <div class="metric-label">Total Leads <span class="stat-hint">Active pipeline</span></div>
+                        <div class="metric-label">Your Leads <span class="stat-hint">(let's grow this!)</span></div>
                     </div>
-                    <div class="metric-card metric-accent">
+                    <div class="metric-card metric-green">
                         <div class="metric-icon"><ion-icon name="checkmark-circle-outline" class="icon-xl"></ion-icon></div>
                         <div class="metric-value" id="closedDealsMetric">0</div>
-                        <div class="metric-label">Closed Deals <span class="stat-hint">Success rate</span></div>
+                        <div class="metric-label">Closed Deals <span class="stat-hint">(building momentum...)</span></div>
                     </div>
-                    <div class="metric-card metric-dark">
+                    <div class="metric-card metric-purple">
                         <div class="metric-icon"><ion-icon name="time-outline" class="icon-xl"></ion-icon></div>
                         <div class="metric-value" id="pendingTasks">0</div>
                         <div class="metric-label">Pending Tasks</div>
                     </div>
-                    <div class="metric-card metric-primary">
+                    <div class="metric-card metric-blue">
                         <div class="metric-icon"><ion-icon name="pie-chart-outline" class="icon-xl"></ion-icon></div>
                         <div class="metric-value" id="conversionRate">—</div>
                         <div class="metric-label">Conversion</div>
                     </div>
                 </div>
 
-                <!-- RIGHT: Quick Actions & Success Story -->
-                <div class="dash-right-col" style="display: flex; flex-direction: column; gap: 24px;">
-                    <!-- Quick Actions Card -->
-                    <div class="dash-card dash-card-actions" style="margin-bottom: 0;">
-                        <div class="dash-card-header">
-                            <h3><ion-icon name="flash-outline" class="icon-sm"></ion-icon> Quick Actions</h3>
-                        </div>
-                        <div class="quick-actions-list">
-                            <button class="quick-action-btn" onclick="openAddLeadModal()">
-                                <div class="qa-icon qa-blue"><ion-icon name="person-add-outline" class="icon-sm"></ion-icon></div>
-                                <span>Bring in a Lead ✨</span>
-                            </button>
-                            <button class="quick-action-btn" onclick="showSection('tasks')">
-                                <div class="qa-icon qa-orange"><ion-icon name="checkbox-outline" class="icon-sm"></ion-icon></div>
-                                <span>Create Task</span>
-                            </button>
-                            <button class="quick-action-btn" onclick="showSection('pipeline')">
-                                <div class="qa-icon qa-green"><ion-icon name="funnel-outline" class="icon-sm"></ion-icon></div>
-                                <span>View Pipeline</span>
-                            </button>
-                            <button class="quick-action-btn" onclick="showSection('analytics')">
-                                <div class="qa-icon qa-purple"><ion-icon name="stats-chart-outline" class="icon-sm"></ion-icon></div>
-                                <span>Reports</span>
-                            </button>
-                        </div>
+                <!-- RIGHT: Quick Actions Card -->
+                <div class="dash-card dash-card-actions">
+                    <div class="dash-card-header">
+                        <h3><ion-icon name="flash-outline" class="icon-sm"></ion-icon> Quick Actions</h3>
                     </div>
-
-                    <!-- Customer Success Story Card -->
-                    <div class="success-story-card">
-                        <div class="success-quote">
-                            "Since implementing this CRM, our pipeline visibility has improved drastically. What used to take hours of manual tracking now happens automatically in real-time."
-                        </div>
-                        <div class="success-author-wrap">
-                            <img src="https://ui-avatars.com/api/?name=Sarah+Chen&background=0D8ABC&color=fff&size=50" alt="Sarah Chen" class="success-author-img">
-                            <div class="success-author-info">
-                                <span class="success-author-name">Sarah Chen</span>
-                                <span class="success-author-title">VP of Global Sales, TechCorp</span>
-                            </div>
-                        </div>
-                        <div class="success-stats-row">
-                            <div class="success-stat">
-                                <span class="success-stat-val">+140%</span>
-                                <span class="success-stat-lbl">Lead Gen</span>
-                            </div>
-                            <div class="success-stat" style="margin-left: auto; text-align: right;">
-                                <span class="success-stat-val">3x</span>
-                                <span class="success-stat-lbl">Faster Close</span>
-                            </div>
-                        </div>
+                    <div class="quick-actions-list">
+                        <button class="quick-action-btn" onclick="openAddLeadModal()">
+                            <div class="qa-icon qa-blue"><ion-icon name="person-add-outline" class="icon-sm"></ion-icon></div>
+                            <span>Bring in a Lead <ion-icon name="sparkles-outline" class="icon-sm"></ion-icon></span>
+                        </button>
+                        <button class="quick-action-btn" onclick="showSection('tasks')">
+                            <div class="qa-icon qa-orange"><ion-icon name="checkbox-outline" class="icon-sm"></ion-icon></div>
+                            <span>Create Task</span>
+                        </button>
+                        <button class="quick-action-btn" onclick="showSection('pipeline')">
+                            <div class="qa-icon qa-green"><ion-icon name="funnel-outline" class="icon-sm"></ion-icon></div>
+                            <span>View Pipeline</span>
+                        </button>
+                        <button class="quick-action-btn" onclick="showSection('analytics')">
+                            <div class="qa-icon qa-purple"><ion-icon name="stats-chart-outline" class="icon-sm"></ion-icon></div>
+                            <span>Reports</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -268,14 +240,14 @@
             <div class="dash-bottom-section">
                 <div class="dash-card dash-card-wide">
                     <div class="dash-card-header">
-                        <h3><ion-icon name="time-outline" class="icon-sm"></ion-icon> Recent Activity ✨</h3>
+                        <h3><ion-icon name="time-outline" class="icon-sm"></ion-icon> Recent Activity <ion-icon name="sparkles-outline" class="icon-sm"></ion-icon></h3>
                         <a href="#" class="view-all-link" onclick="showSection('activity-logs')">View all <ion-icon name="arrow-forward-outline" class="icon-sm"></ion-icon></a>
                     </div>
                     <div id="recentActivity" class="activity-list"></div>
                 </div>
                 <div class="dash-card dash-card-wide">
                     <div class="dash-card-header">
-                        <h3><ion-icon name="calendar-outline" class="icon-sm"></ion-icon> Your Upcoming Tasks 📝</h3>
+                        <h3><ion-icon name="calendar-outline" class="icon-sm"></ion-icon> Your Upcoming Tasks <ion-icon name="document-text-outline" class="icon-sm"></ion-icon></h3>
                         <a href="#" class="view-all-link" onclick="showSection('tasks')">View all <ion-icon name="arrow-forward-outline" class="icon-sm"></ion-icon></a>
                     </div>
                     <div id="upcomingTasks" class="task-list"></div>
@@ -776,41 +748,26 @@
             </div>
 
             <!-- Summary Cards -->
-            <div class="stats-grid" id="invoiceStatsGrid" style="margin-bottom:24px;">
+            <div class="stats-grid" id="invoiceStatsGrid" style="margin-bottom:18px;">
                 <div class="stat-card">
-                    <div class="stat-icon stat-icon-primary"><ion-icon name="document-text-outline"></ion-icon></div>
-                    <div class="stat-info">
-                        <div class="stat-number" id="invStatTotal">—</div>
-                        <div class="stat-label">Total Invoices</div>
-                    </div>
+                    <div class="stat-icon" style="background:#e8f0fe"><ion-icon name="document-text-outline" class="icon-sm" style="color:#003087"></ion-icon></div>
+                    <div class="stat-info"><div class="stat-number" id="invStatTotal">—</div><div class="stat-label">Total Invoices</div></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon stat-icon-success"><ion-icon name="checkmark-circle-outline"></ion-icon></div>
-                    <div class="stat-info">
-                        <div class="stat-number" id="invStatPaid">—</div>
-                        <div class="stat-label">Paid</div>
-                    </div>
+                    <div class="stat-icon" style="background:#e6f4ea"><ion-icon name="checkmark-circle-outline" class="icon-sm" style="color:#2e7d32"></ion-icon></div>
+                    <div class="stat-info"><div class="stat-number" id="invStatPaid">—</div><div class="stat-label">Paid</div></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon stat-icon-orange"><ion-icon name="time-outline"></ion-icon></div>
-                    <div class="stat-info">
-                        <div class="stat-number" id="invStatUnpaid">—</div>
-                        <div class="stat-label">Unpaid</div>
-                    </div>
+                    <div class="stat-icon" style="background:#fff3e0"><ion-icon name="time-outline" class="icon-sm" style="color:#ef6c00"></ion-icon></div>
+                    <div class="stat-info"><div class="stat-number" id="invStatUnpaid">—</div><div class="stat-label">Unpaid</div></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon stat-icon-danger"><ion-icon name="warning-outline"></ion-icon></div>
-                    <div class="stat-info">
-                        <div class="stat-number" id="invStatOverdue">—</div>
-                        <div class="stat-label">Overdue</div>
-                    </div>
+                    <div class="stat-icon" style="background:#fce8e8"><ion-icon name="warning-outline" class="icon-sm" style="color:#c62828"></ion-icon></div>
+                    <div class="stat-info"><div class="stat-number" id="invStatOverdue">—</div><div class="stat-label">Overdue</div></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon stat-icon-purple"><ion-icon name="cash-outline"></ion-icon></div>
-                    <div class="stat-info">
-                        <div class="stat-number" id="invStatValue">—</div>
-                        <div class="stat-label">Total Value</div>
-                    </div>
+                    <div class="stat-icon" style="background:#f3e5f5"><ion-icon name="cash-outline" class="icon-sm" style="color:#6a1b9a"></ion-icon></div>
+                    <div class="stat-info"><div class="stat-number" id="invStatValue">—</div><div class="stat-label">Total Value</div></div>
                 </div>
             </div>
 
@@ -836,7 +793,7 @@
                     <input type="date" id="invFilterFrom" class="form-control" style="width:150px;" onchange="loadInvoices()" placeholder="From">
                     <input type="date" id="invFilterTo" class="form-control" style="width:150px;" onchange="loadInvoices()" placeholder="To">
                     <button class="btn btn-secondary" onclick="clearInvoiceFilters()"><ion-icon name="close-outline" class="icon-sm"></ion-icon> Clear</button>
-                    <button class="btn btn-accent" onclick="openCreateInvoiceModal()"><ion-icon name="add-outline" class="icon-sm"></ion-icon> New Invoice</button>
+                    <button class="btn btn-primary" onclick="openCreateInvoiceModal()"><ion-icon name="add-outline" class="icon-sm"></ion-icon> New Invoice</button>
                 </div>
 
                 <div class="table-container">
@@ -929,19 +886,13 @@
             <form id="invoiceForm" onsubmit="handleSaveInvoice(event)">
                 <input type="hidden" id="invoiceEditId">
                 <div class="form-row">
-                    <div class="form-group" style="grid-column: span 2;">
+                    <div class="form-group">
                         <label>Invoice Number *</label>
                         <input type="text" id="invNo" name="invoiceNumber" required placeholder="e.g. KMC/2526/001">
                     </div>
-                </div>
-                <div class="form-row">
                     <div class="form-group">
                         <label>Invoice Date *</label>
                         <input type="date" id="invDate" name="invoiceDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Due Date *</label>
-                        <input type="date" id="invDueDate" name="dueDate" required>
                     </div>
                 </div>
                 <div class="form-row">
@@ -2042,7 +1993,6 @@
 
     <script src="/dashboard.js"></script>
     <script src="/lead-analytics.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         // Initialize greeting
         if (typeof updateGreeting === 'function') updateGreeting();
