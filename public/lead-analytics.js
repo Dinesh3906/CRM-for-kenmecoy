@@ -33,8 +33,9 @@ function initLeadAnalyticsChart() {
     // Create Gradient
     const chartCtx = ctx.getContext('2d');
     const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 1)');   // #3B82F6
-    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.6)');  // #2563EB
+    // Updated to Blue-Orange Gradient Theme
+    gradient.addColorStop(0, 'rgba(0, 74, 173, 1)');   // #004aad
+    gradient.addColorStop(1, 'rgba(255, 156, 0, 0.8)');  // #ff9c00
 
     try {
         leadAnalyticsChart = new Chart(ctx, {
@@ -45,12 +46,12 @@ function initLeadAnalyticsChart() {
                     label: 'New Leads',
                     data: [],
                     backgroundColor: gradient,
-                    borderColor: '#1D4ED8',
+                    borderColor: '#004aad',
                     borderWidth: 1,
                     borderRadius: 8,
-                    hoverBackgroundColor: '#1E40AF',
+                    hoverBackgroundColor: 'rgba(255, 156, 0, 0.9)',
                     hoverBorderWidth: 2,
-                    hoverBorderColor: '#1D4ED8',
+                    hoverBorderColor: '#e68a00',
                     barThickness: 'flex',
                     maxBarThickness: 45
                 }]
