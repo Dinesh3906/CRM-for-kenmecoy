@@ -3732,7 +3732,7 @@ hr {
 
 .modern-table th:last-child,
 .modern-table td:last-child {
-  padding-right: 60px !important;
+  padding-right: 80px !important;
   text-align: right !important;
   white-space: nowrap !important;
 }
