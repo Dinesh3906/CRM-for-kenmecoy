@@ -3681,12 +3681,12 @@ hr {
 }
 
 .modern-table-container {
-  background: #f8e8aa;
-  border-radius: 16px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.05),
-    0 10px 15px -5px rgba(0, 0, 0, 0.02);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  margin-bottom: 24px;
+  padding-right: 20px;
 }
 
 .modern-table {
