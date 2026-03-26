@@ -3684,9 +3684,8 @@ hr {
   background: white;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow-x: auto !important;
   margin-bottom: 24px;
-  padding-right: 20px;
 }
 
 .modern-table {
@@ -3732,13 +3731,21 @@ hr {
 
 .modern-table th:last-child,
 .modern-table td:last-child {
-  padding-right: 80px !important;
-  text-align: right !important;
+  text-align: center !important;
   white-space: nowrap !important;
+  width: 120px;
+  max-width: 120px;
+  padding: 12px 8px !important;
 }
 
 .modern-table td:last-child .modern-actions {
-  justify-content: flex-end;
+  justify-content: center;
+  gap: 0px;
+}
+
+.modern-table td:last-child .modern-actions .btn-icon {
+  width: 28px;
+  height: 28px;
 }
 
 /* Status Badges */

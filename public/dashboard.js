@@ -5176,11 +5176,12 @@ async function loadInvoices() {
                 <td style="text-align:right;font-weight:600;">${fmtINR(inv.netPayable)}</td>
                 <td>${fmtD(inv.dueDate)}</td>
                 <td>${statusBadge(inv.paymentStatus)}</td>
-                <td style="white-space:nowrap;">
-                    <button class="btn btn-sm btn-secondary" onclick="viewInvoice('${inv._id}')" title="View"><ion-icon name="eye-outline" class="icon-sm"></ion-icon></button>
-                    <button class="btn btn-sm btn-primary" onclick="openEditInvoiceModal('${inv._id}')" title="Edit"><ion-icon name="create-outline" class="icon-sm"></ion-icon></button>
-                    <button class="btn btn-sm btn-success" onclick="downloadInvoicePDF('${inv._id}', '${inv.invoiceNumber}')" title="PDF"><ion-icon name="file-pdf-outline" class="icon-sm"></ion-icon></button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${inv._id}')" title="Delete"><ion-icon name="trash-outline" class="icon-sm"></ion-icon></button>
+                <td><span style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;${inv.approvalStatus === 'approved' ? 'background:#d1fae5;color:#065f46;' : inv.approvalStatus === 'rejected' ? 'background:#fee2e2;color:#991b1b;' : 'background:#fef3c7;color:#92400e;'}">${inv.approvalStatus === 'approved' ? 'Approved' : inv.approvalStatus === 'rejected' ? 'Rejected' : 'Pending'}</span></td>
+                <td style="white-space:nowrap;text-align:center;">
+                    <button class="btn btn-sm btn-secondary" onclick="viewInvoice('${inv._id}')" title="View" style="padding:3px 5px;margin:0 1px;"><ion-icon name="eye-outline" style="font-size:14px;"></ion-icon></button>
+                    <button class="btn btn-sm btn-primary" onclick="openEditInvoiceModal('${inv._id}')" title="Edit" style="padding:3px 5px;margin:0 1px;"><ion-icon name="create-outline" style="font-size:14px;"></ion-icon></button>
+                    <button class="btn btn-sm btn-success" onclick="downloadInvoicePDF('${inv._id}', '${inv.invoiceNumber}')" title="PDF" style="padding:3px 5px;margin:0 1px;"><ion-icon name="download-outline" style="font-size:14px;"></ion-icon></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${inv._id}')" title="Delete" style="padding:3px 5px;margin:0 1px;"><ion-icon name="trash-outline" style="font-size:14px;"></ion-icon></button>
                 </td>
             </tr>`;
         }).join('');
