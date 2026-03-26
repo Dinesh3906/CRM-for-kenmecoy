@@ -3730,6 +3730,17 @@ hr {
   vertical-align: middle;
 }
 
+.modern-table th:last-child,
+.modern-table td:last-child {
+  padding-right: 60px !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+.modern-table td:last-child .modern-actions {
+  justify-content: flex-end;
+}
+
 /* Status Badges */
 .status-pill {
   display: inline-flex;
