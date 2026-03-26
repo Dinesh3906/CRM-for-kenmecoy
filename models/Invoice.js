@@ -64,6 +64,11 @@ const invoiceSchema = new mongoose.Schema({
         enum: ['sourcing', 'assessment', 'both'],
         default: 'sourcing'
     },
+    chargesFor: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     candidates: [candidateSchema],
     // Financial fields
     chargeableSalary: {
@@ -159,7 +164,8 @@ const invoiceSchema = new mongoose.Schema({
         signedBy: mongoose.Schema.Types.ObjectId,
         signedAt: Date,
         signatoryName: String,
-        signatureImage: String, // Base64 encoded image
+        signatureImage: String, // Base64 encoded drawn signature
+        sealImage: String,      // Base64 encoded company seal/stamp
         _id: false
     }],
     // Attachments
@@ -175,6 +181,23 @@ const invoiceSchema = new mongoose.Schema({
         uploadedBy: mongoose.Schema.Types.ObjectId,
         _id: false
     }],
+    // Approval workflow
+    approvalStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
+    approvalNote: {
+        type: String,
+        trim: true
+    },
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    approvedAt: {
+        type: Date
+    },
     createdAt: {
         type: Date,
         default: Date.now

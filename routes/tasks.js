@@ -13,17 +13,17 @@ router.get('/', async (req, res) => {
     try {
         const { status, priority, assignedTo, dueDate } = req.query;
         const User = require('../models/User');
-        
+
         console.log('GET /tasks - User:', req.user.email, 'Role:', req.user.role, 'Department:', req.user.department);
-        
+
         let query = {};
-        
+
         // Apply hierarchical filtering
         // SuperAdmin: sees all tasks
         // Admin: sees tasks in their department
         // Manager: sees their team's tasks
         // Staff: sees only assigned tasks
-        
+
         if (req.user.role === 'superadmin') {
             // SuperAdmin sees ALL tasks
             query = {};
@@ -75,7 +75,7 @@ router.get('/', async (req, res) => {
             .populate('assignedTo', 'username email fullName role department')
             .populate('user', 'username email fullName')
             .sort({ dueDate: 1 });
-        
+
         console.log('Found tasks:', tasks.length);
         res.json(tasks);
     } catch (error) {
@@ -97,7 +97,7 @@ router.get('/upcoming', async (req, res) => {
         })
             .populate('lead', 'name company')
             .sort({ dueDate: 1 });
-        
+
         res.json(tasks);
     } catch (error) {
         console.error('Error fetching upcoming tasks:', error);
@@ -117,7 +117,7 @@ router.get('/overdue', async (req, res) => {
         })
             .populate('lead', 'name company')
             .sort({ dueDate: 1 });
-        
+
         res.json(tasks);
     } catch (error) {
         console.error('Error fetching overdue tasks:', error);
@@ -131,7 +131,7 @@ router.get('/:id', async (req, res) => {
         const task = await Task.findById(req.params.id)
             .populate('lead', 'companyName contactPerson email mobile')
             .populate('assignedTo', 'username email fullName');
-        
+
         if (!task) {
             return res.status(404).json({ message: 'Task not found' });
         }
@@ -139,34 +139,34 @@ router.get('/:id', async (req, res) => {
         // Check if user has access to this task
         const User = require('../models/User');
         let hasAccess = false;
-        
+
         if (req.user.role === 'superadmin') {
             hasAccess = true;
         } else if (req.user.role === 'admin') {
             // Admin can access tasks in their department
             const deptUsers = await User.find({ department: req.user.department }).select('_id');
             const deptUserIds = deptUsers.map(u => u._id.toString());
-            hasAccess = 
+            hasAccess =
                 deptUserIds.includes(task.user?.toString()) ||
                 deptUserIds.includes(task.assignedTo?._id?.toString() || task.assignedTo?.toString());
         } else if (req.user.role === 'manager') {
             // Manager can access their team's tasks
             const teamMembers = await User.find({ managerId: req.user._id }).select('_id');
             const teamIds = [req.user._id.toString(), ...teamMembers.map(m => m._id.toString())];
-            hasAccess = 
+            hasAccess =
                 teamIds.includes(task.user?.toString()) ||
                 teamIds.includes(task.assignedTo?._id?.toString() || task.assignedTo?.toString());
         } else {
             // Staff can only access tasks assigned to them
             hasAccess = task.assignedTo?.toString() === req.user._id.toString() ||
-                       task.assignedTo?._id?.toString() === req.user._id.toString() ||
-                       task.user?.toString() === req.user._id.toString();
+                task.assignedTo?._id?.toString() === req.user._id.toString() ||
+                task.user?.toString() === req.user._id.toString();
         }
-        
+
         if (!hasAccess) {
             return res.status(403).json({ message: 'Access denied.' });
         }
-        
+
         res.json(task);
     } catch (error) {
         console.error('Error fetching task:', error);
@@ -179,7 +179,7 @@ router.post('/', async (req, res) => {
     try {
         const { lead, assignedTo, dueDate, action, status, remarks } = req.body;
         const User = require('../models/User');
-        
+
         if (!assignedTo || !dueDate || !action) {
             return res.status(400).json({ message: 'Assigned To, Due Date, and Action are required' });
         }
@@ -190,43 +190,6 @@ router.post('/', async (req, res) => {
             if (!targetUser) {
                 return res.status(404).json({ message: 'Assigned user not found' });
             }
-            
-            // Staff can assign tasks to their manager or themselves
-            // Manager can assign to their team or admin
-            // Admin can assign within department
-            // SuperAdmin can assign to anyone
-            
-            if (req.user.role === 'staff') {
-                // Staff can only assign to themselves or their manager
-                const isAllowed = 
-                    targetUser._id.toString() === req.user._id.toString() || // Self
-                    targetUser._id.toString() === req.user.managerId?.toString() || // Their manager
-                    targetUser.role === 'admin' || // Admin
-                    targetUser.role === 'superadmin'; // Superadmin
-                
-                if (!isAllowed) {
-                    return res.status(403).json({ message: 'Staff can only create tasks for themselves, their manager, admin, or superadmin' });
-                }
-            } else if (req.user.role === 'manager') {
-                // Manager can assign to their team or admin/superadmin
-                const teamMembers = await User.find({ managerId: req.user._id }).select('_id');
-                const teamIds = teamMembers.map(m => m._id.toString());
-                const isAllowed = 
-                    teamIds.includes(targetUser._id.toString()) || // Team member
-                    targetUser._id.toString() === req.user._id.toString() || // Self
-                    targetUser.role === 'admin' || // Admin
-                    targetUser.role === 'superadmin'; // Superadmin
-                
-                if (!isAllowed) {
-                    return res.status(403).json({ message: 'Manager can only assign tasks to their team, admin, or superadmin' });
-                }
-            } else if (req.user.role === 'admin') {
-                // Admin can assign to anyone in their department or superadmin
-                if (targetUser.department !== req.user.department && targetUser.role !== 'superadmin') {
-                    return res.status(403).json({ message: 'Admin can only assign tasks within their department' });
-                }
-            }
-            // SuperAdmin can assign to anyone (no restriction)
         }
 
         // If lead is provided, verify access
@@ -246,6 +209,14 @@ router.post('/', async (req, res) => {
             remarks,
             user: req.user._id
         });
+
+        if (req.body.statusDetails && req.body.statusDetails.trim() !== '') {
+            task.statusUpdates.push({
+                text: req.body.statusDetails.trim(),
+                authorName: req.user.fullName || req.user.email || 'Unknown',
+                timestamp: new Date()
+            });
+        }
 
         await task.save();
 
@@ -285,7 +256,7 @@ router.put('/:id', async (req, res) => {
     try {
         const task = await Task.findById(req.params.id)
             .populate('assignedTo', 'role department managerId');
-        
+
         if (!task) {
             return res.status(404).json({ message: 'Task not found' });
         }
@@ -293,42 +264,75 @@ router.put('/:id', async (req, res) => {
         // Permission checks based on role hierarchy
         const User = require('../models/User');
         let hasPermission = false;
-        
+
         const oldStatus = task.status;
-        
+
         if (req.user.role === 'superadmin') {
             hasPermission = true;
         } else if (req.user.role === 'admin') {
             // Admin can update tasks in their department
             const deptUsers = await User.find({ department: req.user.department }).select('_id');
             const deptUserIds = deptUsers.map(u => u._id.toString());
-            hasPermission = 
+            hasPermission =
                 deptUserIds.includes(task.user?.toString()) ||
                 deptUserIds.includes(task.assignedTo?._id?.toString());
         } else if (req.user.role === 'manager') {
             // Manager can update their team's tasks
             const teamMembers = await User.find({ managerId: req.user._id }).select('_id');
             const teamIds = [req.user._id.toString(), ...teamMembers.map(m => m._id.toString())];
-            hasPermission = 
+            hasPermission =
                 teamIds.includes(task.user?.toString()) ||
                 teamIds.includes(task.assignedTo?._id?.toString());
         } else {
-            // Staff can update tasks assigned to them
-            hasPermission = task.assignedTo?._id?.toString() === req.user._id.toString();
+            // Staff can update tasks assigned to them OR tasks they created
+            hasPermission =
+                task.assignedTo?._id?.toString() === req.user._id.toString() ||
+                task.user?.toString() === req.user._id.toString();
         }
-        
+
         if (!hasPermission) {
             return res.status(403).json({ message: 'Access denied. You cannot update this task.' });
         }
 
-        const { assignedTo, dueDate, action, status, remarks, notes } = req.body;
-        
+        const { assignedTo, dueDate, action, status, remarks, notes, newStatusUpdate } = req.body;
+
         if (assignedTo) task.assignedTo = assignedTo;
         if (dueDate) task.dueDate = dueDate;
         if (action) task.action = action;
         if (status) task.status = status;
         if (remarks !== undefined) task.remarks = remarks;
         if (notes !== undefined) task.notes = notes;
+
+        if (newStatusUpdate && newStatusUpdate.trim() !== '') {
+            task.statusUpdates.push({
+                text: newStatusUpdate.trim(),
+                authorName: req.user.fullName || req.user.email || 'Unknown',
+                timestamp: new Date()
+            });
+
+            // Notify the other party about the comment
+            const Notification = require('../models/Notification');
+            const updaterId = req.user._id.toString();
+            const creatorId = task.user ? task.user.toString() : null;
+            const assigneeId = task.assignedTo ? task.assignedTo.toString() : null;
+
+            let notifyUserId = null;
+            if (updaterId === creatorId && assigneeId && assigneeId !== creatorId) {
+                notifyUserId = assigneeId;
+            } else if (updaterId === assigneeId && creatorId && creatorId !== assigneeId) {
+                notifyUserId = creatorId;
+            }
+
+            if (notifyUserId) {
+                await Notification.create({
+                    recipient: notifyUserId,
+                    sender: req.user._id,
+                    task: task._id,
+                    type: 'comment',
+                    message: `New message on task "${task.action || 'Task'}"`
+                });
+            }
+        }
 
         await task.save();
 
@@ -369,7 +373,7 @@ router.put('/:id', async (req, res) => {
 router.patch('/:id/complete', async (req, res) => {
     try {
         const task = await Task.findById(req.params.id);
-        
+
         if (!task) {
             return res.status(404).json({ message: 'Task not found' });
         }
@@ -377,29 +381,29 @@ router.patch('/:id/complete', async (req, res) => {
         // Check if user has permission based on role hierarchy
         const User = require('../models/User');
         let hasPermission = false;
-        
+
         if (req.user.role === 'superadmin') {
             hasPermission = true;
         } else if (req.user.role === 'admin') {
             // Admin can complete tasks in their department
             const deptUsers = await User.find({ department: req.user.department }).select('_id');
             const deptUserIds = deptUsers.map(u => u._id.toString());
-            hasPermission = 
+            hasPermission =
                 deptUserIds.includes(task.user?.toString()) ||
                 deptUserIds.includes(task.assignedTo?.toString());
         } else if (req.user.role === 'manager') {
             // Manager can complete their team's tasks
             const teamMembers = await User.find({ managerId: req.user._id }).select('_id');
             const teamIds = [req.user._id.toString(), ...teamMembers.map(m => m._id.toString())];
-            hasPermission = 
+            hasPermission =
                 teamIds.includes(task.user?.toString()) ||
                 teamIds.includes(task.assignedTo?.toString());
         } else {
             // Staff can complete tasks assigned to them or created by them
             hasPermission = task.assignedTo?.toString() === req.user._id.toString() ||
-                           task.user?.toString() === req.user._id.toString();
+                task.user?.toString() === req.user._id.toString();
         }
-        
+
         if (!hasPermission) {
             return res.status(403).json({ message: 'Access denied.' });
         }
@@ -433,7 +437,7 @@ router.patch('/:id/complete', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const task = await Task.findById(req.params.id);
-        
+
         if (!task) {
             return res.status(404).json({ message: 'Task not found' });
         }
@@ -443,29 +447,29 @@ router.delete('/:id', async (req, res) => {
         // - Admin can delete tasks in their department
         // - Manager can delete their team's tasks
         // - Staff can delete tasks they created
-        
+
         const User = require('../models/User');
         let hasPermission = false;
-        
+
         if (req.user.role === 'superadmin') {
             hasPermission = true;
         } else if (req.user.role === 'admin') {
             const deptUsers = await User.find({ department: req.user.department }).select('_id');
             const deptUserIds = deptUsers.map(u => u._id.toString());
-            hasPermission = 
+            hasPermission =
                 deptUserIds.includes(task.user?.toString()) ||
                 deptUserIds.includes(task.assignedTo?.toString());
         } else if (req.user.role === 'manager') {
             const teamMembers = await User.find({ managerId: req.user._id }).select('_id');
             const teamIds = [req.user._id.toString(), ...teamMembers.map(m => m._id.toString())];
-            hasPermission = 
+            hasPermission =
                 teamIds.includes(task.user?.toString()) ||
                 teamIds.includes(task.assignedTo?.toString());
         } else {
             // Staff can only delete tasks they created
             hasPermission = task.user?.toString() === req.user._id.toString();
         }
-        
+
         if (!hasPermission) {
             return res.status(403).json({ message: 'Access denied. You cannot delete this task.' });
         }

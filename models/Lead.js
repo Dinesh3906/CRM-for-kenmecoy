@@ -6,7 +6,24 @@ const leadSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    customerCode: {
+        type: String,
+        trim: true
+    },
+    gstNo: {
+        type: String,
+        trim: true
+    },
+    category: {
+        type: String,
+        enum: ['Corporate Office', 'Plant / Site', 'Other office', ''],
+        trim: true
+    },
     contactPerson: {
+        type: String,
+        trim: true
+    },
+    designation: {
         type: String,
         trim: true
     },
@@ -23,11 +40,25 @@ const leadSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    contacts: [{
+        name: { type: String, trim: true },
+        designation: { type: String, trim: true },
+        mobile: { type: String, trim: true },
+        email: { type: String, trim: true, lowercase: true }
+    }],
     status: {
         type: String,
-        enum: ['new', 'work-in-progress', 'test-assignment', 'won', 'lost'],
-        default: 'new'
+        default: 'New Lead'
     },
+    statusDetails: {
+        type: String,
+        trim: true
+    },
+    statusUpdates: [{
+        text: String,
+        authorName: String,
+        timestamp: { type: Date, default: Date.now }
+    }],
     remarks: {
         type: String,
         trim: true

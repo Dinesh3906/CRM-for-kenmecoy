@@ -4,3 +4,11 @@ node_modules/
 uploads/
 *.log
 npm-debug.log*
+*.bak
+*.new_features
+*.new_backup
+*.orig
+*_diff.txt
+fix_*.js
+temp_backup/
+.system_generated/

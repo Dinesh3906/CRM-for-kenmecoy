@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
             .populate('sender', 'fullName email')
             .populate('lead', 'companyName contactPerson')
             .populate('task', 'action dueDate')
+            .populate('invoice', 'invoiceNumber approvalStatus customerSnapshot.name')
             .sort({ read: 1, createdAt: -1 }) // Unread first, then by date
             .limit(parseInt(limit));
         

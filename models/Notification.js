@@ -19,9 +19,23 @@ const notificationSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Task'
     },
+    invoice: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Invoice'
+    },
     type: {
         type: String,
-        enum: ['status_change', 'comment', 'assignment', 'reassignment', 'task_created', 'task_completed'],
+        enum: [
+            'status_change',
+            'comment',
+            'assignment',
+            'reassignment',
+            'task_created',
+            'task_completed',
+            'invoice_created',
+            'invoice_approved',
+            'invoice_rejected'
+        ],
         required: true
     },
     message: {

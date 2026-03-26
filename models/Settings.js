@@ -62,6 +62,11 @@ const settingsSchema = new mongoose.Schema({
         backupFrequency: { type: String, enum: ['daily', 'weekly', 'monthly'], default: 'daily' },
         lastBackup: { type: Date }
     },
+    invoiceDefaults: {
+        defaultSignatoryName: { type: String, trim: true },
+        defaultSealUrl: { type: String },
+        defaultTemplate: { type: String, enum: ['image1', 'image2'], default: 'image1' }
+    },
     createdAt: {
         type: Date,
         default: Date.now

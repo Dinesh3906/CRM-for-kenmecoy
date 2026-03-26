@@ -299,7 +299,7 @@ router.post('/', async (req, res) => {
             return res.status(403).json({ message: 'Staff cannot create leads. Leads must be assigned by your Manager or Admin.' });
         }
 
-        const { companyName, contactPerson, email, mobile, address, status, remarks, assignedTo } = req.body;
+        const { companyName, customerCode, gstNo, category, contactPerson, designation, email, mobile, contacts, address, status, statusDetails, remarks, assignedTo } = req.body;
 
         // Validate required fields
         if (!companyName || !assignedTo) {
@@ -307,13 +307,29 @@ router.post('/', async (req, res) => {
         }
 
         const user = req.user;
+        
+        let initialUpdates = [];
+        if (statusDetails && statusDetails.trim() !== '') {
+            initialUpdates.push({
+                text: statusDetails.trim(),
+                authorName: user.fullName || user.email || 'Unknown',
+                timestamp: new Date()
+            });
+        }
+
         const lead = new Lead({
             companyName,
+            customerCode,
+            gstNo,
+            category,
             contactPerson,
+            designation,
             email,
             mobile,
+            contacts: contacts || [],
             address,
             status: status || 'new',
+            statusUpdates: initialUpdates,
             remarks,
             assignedTo,
             user: user._id
@@ -399,17 +415,18 @@ router.put('/:id', async (req, res) => {
             }
         }
 
-        const { companyName, contactPerson, email, mobile, address, status, remarks, assignedTo } = req.body;
+        const { companyName, customerCode, gstNo, category, contactPerson, designation, email, mobile, address, status, remarks, assignedTo, newStatusUpdate } = req.body;
+        const resolvedAssignedTo = assignedTo || (lead.assignedTo ? lead.assignedTo.toString() : '');
 
         // Validate required fields (skip for staff who can only update status/remarks)
         if (req.user.role !== 'staff') {
-            if (!companyName || !assignedTo) {
+            if (!companyName || !resolvedAssignedTo) {
                 return res.status(400).json({ message: 'Company Name and Assigned To are required' });
             }
         }
 
         // Build update object based on role
-        const updateData = {};
+        let updateData = {};
         if (req.user.role === 'staff') {
             // Staff can only update status and remarks
             if (status !== undefined) updateData.status = status;
@@ -417,17 +434,21 @@ router.put('/:id', async (req, res) => {
         } else {
             // Other roles can update all fields
             updateData.companyName = companyName;
+            if (customerCode !== undefined) updateData.customerCode = customerCode;
+            if (gstNo !== undefined) updateData.gstNo = gstNo;
+            if (category !== undefined) updateData.category = category;
             updateData.contactPerson = contactPerson;
+            if (designation !== undefined) updateData.designation = designation;
             updateData.email = email;
             updateData.mobile = mobile;
             updateData.address = address;
             updateData.status = status;
             updateData.remarks = remarks;
-            updateData.assignedTo = assignedTo;
+            updateData.assignedTo = resolvedAssignedTo;
         }
         updateData.updatedAt = Date.now();
 
-        const updatedLead = await Lead.findByIdAndUpdate(
+        let updatedLead = await Lead.findByIdAndUpdate(
             req.params.id,
             updateData,
             { new: true, runValidators: true }
@@ -435,6 +456,38 @@ router.put('/:id', async (req, res) => {
 
         if (!updatedLead) {
             return res.status(404).json({ message: 'Lead not found' });
+        }
+
+        if (newStatusUpdate && newStatusUpdate.trim() !== '') {
+            updatedLead.statusUpdates.push({
+                text: newStatusUpdate.trim(),
+                authorName: req.user.fullName || req.user.email || 'Unknown',
+                timestamp: new Date()
+            });
+            await updatedLead.save();
+
+            // Notify the other party about the comment
+            const Notification = require('../models/Notification');
+            const updaterId = req.user._id.toString();
+            const creatorId = updatedLead.user ? updatedLead.user.toString() : null;
+            const assigneeId = updatedLead.assignedTo ? updatedLead.assignedTo.toString() : null;
+
+            let notifyUserId = null;
+            if (updaterId === creatorId && assigneeId && assigneeId !== creatorId) {
+                notifyUserId = assigneeId;
+            } else if (updaterId === assigneeId && creatorId && creatorId !== assigneeId) {
+                notifyUserId = creatorId;
+            }
+
+            if (notifyUserId) {
+                await Notification.create({
+                    recipient: notifyUserId,
+                    sender: req.user._id,
+                    lead: updatedLead._id,
+                    type: 'comment',
+                    message: `New message on lead "${updatedLead.companyName || 'Lead'}"`
+                });
+            }
         }
 
         // Send notifications for changes
@@ -447,7 +500,7 @@ router.put('/:id', async (req, res) => {
             );
         }
 
-        if (assignedTo && assignedTo !== oldAssignedTo) {
+        if (resolvedAssignedTo && resolvedAssignedTo !== oldAssignedTo) {
             await notifyLeadHierarchy(
                 updatedLead,
                 oldAssignedTo ? 'reassignment' : 'assignment',

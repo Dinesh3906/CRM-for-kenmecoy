@@ -25,6 +25,11 @@ const taskSchema = new mongoose.Schema({
         enum: ['pending', 'in-progress', 'completed', 'cancelled'],
         default: 'pending'
     },
+    statusUpdates: [{
+        text: String,
+        authorName: String,
+        timestamp: { type: Date, default: Date.now }
+    }],
     remarks: {
         type: String,
         trim: true

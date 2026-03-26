@@ -33,9 +33,9 @@ function initLeadAnalyticsChart() {
     // Create Gradient
     const chartCtx = ctx.getContext('2d');
     const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
-    // Updated to Blue-Orange Gradient Theme
-    gradient.addColorStop(0, 'rgba(0, 74, 173, 1)');   // #004aad
-    gradient.addColorStop(1, 'rgba(255, 156, 0, 0.8)');  // #ff9c00
+    // Updated to Professional Saffron-Orange Gradient Theme
+    gradient.addColorStop(0, 'rgba(255, 153, 51, 1)');   // #2C4A7C (Saffron)
+    gradient.addColorStop(1, 'rgba(255, 94, 0, 0.8)');  // #132D55 (Deep Orange)
 
     try {
         leadAnalyticsChart = new Chart(ctx, {
@@ -46,10 +46,10 @@ function initLeadAnalyticsChart() {
                     label: 'New Leads',
                     data: [],
                     backgroundColor: gradient,
-                    borderColor: '#004aad',
+                    borderColor: '#2C4A7C',
                     borderWidth: 1,
                     borderRadius: 8,
-                    hoverBackgroundColor: 'rgba(255, 156, 0, 0.9)',
+                    hoverBackgroundColor: 'rgba(255, 94, 0, 0.9)',
                     hoverBorderWidth: 2,
                     hoverBorderColor: '#e68a00',
                     barThickness: 'flex',
@@ -85,7 +85,7 @@ function initLeadAnalyticsChart() {
                         cornerRadius: 8,
                         displayColors: false,
                         callbacks: {
-                            label: function(context) {
+                            label: function (context) {
                                 return ` Leads: ${context.raw}`;
                             }
                         }
@@ -96,9 +96,9 @@ function initLeadAnalyticsChart() {
                         beginAtZero: true,
                         grace: '15%',
                         grid: { color: '#F1F5F9', drawBorder: false },
-                        ticks: { 
-                            stepSize: 1, 
-                            color: '#64748B', 
+                        ticks: {
+                            stepSize: 1,
+                            color: '#64748B',
                             font: { size: 11, weight: '600' },
                             padding: 10
                         },
@@ -111,8 +111,8 @@ function initLeadAnalyticsChart() {
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { 
-                            color: '#1E293B', 
+                        ticks: {
+                            color: '#1E293B',
                             font: { size: 12, weight: '700' },
                             padding: 10
                         }
@@ -151,7 +151,7 @@ async function updateLeadAnalyticsChart() {
     const loadingOverlay = document.getElementById('chartLoadingOverlay');
     const emptyState = document.getElementById('chartEmptyState');
     const chartCanvas = document.getElementById('leadAnalyticsChart');
-    
+
     // Auth context (globals from dashboard.js)
     const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : '/api';
     const token = typeof authToken !== 'undefined' ? authToken : localStorage.getItem('authToken');
@@ -177,7 +177,7 @@ async function updateLeadAnalyticsChart() {
         // Update Insights
         document.getElementById('totalLeads').textContent = data.total;
         document.getElementById('bestDay').textContent = data.bestDay;
-        
+
         const trendEl = document.getElementById('leadTrend');
         if (trendEl) {
             trendEl.textContent = data.trend;
@@ -214,7 +214,7 @@ async function updateLeadAnalyticsChart() {
 function exportLeadChart() {
     const canvas = document.getElementById('leadAnalyticsChart');
     if (!canvas) return;
-    
+
     const link = document.createElement('a');
     link.download = `lead-analytics-${new Date().toISOString().split('T')[0]}.png`;
     link.href = canvas.toDataURL('image/png');
@@ -230,14 +230,14 @@ function onBarClick(label, value) {
     } else {
         alert(`You gained ${value} lead(s) on ${label}!`);
     }
-    
+
     // Optionally: showSection('leads') and filter by that day
 }
 
 // Hook into existing refresh if possible
 if (typeof refreshDashboard === 'function') {
     const originalRefresh = window.refreshDashboard;
-    window.refreshDashboard = async function() {
+    window.refreshDashboard = async function () {
         await originalRefresh();
         updateLeadAnalyticsChart();
     };

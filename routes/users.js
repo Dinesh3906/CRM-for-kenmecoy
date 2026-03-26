@@ -73,44 +73,8 @@ router.get('/', async (req, res) => {
 // Get users for task assignment (all authenticated users can access)
 router.get('/for-assignment', async (req, res) => {
     try {
-        let query = {};
-        
-        // SuperAdmin can assign to all active users
-        if (req.user.role === 'superadmin') {
-            query = { isActive: true };
-        }
-        // Admin can assign to department users and superadmins
-        else if (req.user.role === 'admin') {
-            query = {
-                $or: [
-                    { department: req.user.department, isActive: true },
-                    { role: 'superadmin', isActive: true }
-                ]
-            };
-        }
-        // Manager can assign to team members, themselves, department staff, and superiors
-        else if (req.user.role === 'manager') {
-            query = {
-                $or: [
-                    { managerId: req.user._id, isActive: true },
-                    { _id: req.user._id },
-                    { role: 'staff', department: req.user.department, isActive: true },
-                    { role: 'superadmin', isActive: true },
-                    { role: 'admin', isActive: true }
-                ]
-            };
-        }
-        // Staff can assign to themselves, their manager, and superiors
-        else {
-            query = {
-                $or: [
-                    { _id: req.user._id },
-                    { _id: req.user.managerId },
-                    { role: 'superadmin', isActive: true },
-                    { role: 'admin', isActive: true }
-                ]
-            };
-        }
+        // Anyone can assign a task to anybody active
+        const query = { isActive: true };
         
         const users = await User.find(query)
             .select('_id fullName email isActive')

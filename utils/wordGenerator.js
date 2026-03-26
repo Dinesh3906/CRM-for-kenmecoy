@@ -2,7 +2,7 @@
  * Utility functions for generating Word documents and handling digital signatures
  */
 
-const { Document, Packer, Paragraph, Table, TableCell, TableRow, Bookmark, BorderStyle, VerticalAlign, AlignmentType, TextRun, PageBreak, UnderlineType } = require('docx');
+const { Document, Packer, Paragraph, Table, TableCell, TableRow, Bookmark, BorderStyle, VerticalAlign, AlignmentType, TextRun, PageBreak, UnderlineType, ImageRun } = require('docx');
 const fs = require('fs');
 const path = require('path');
 
@@ -36,7 +36,12 @@ async function generateInvoiceWord(invoice, companyInfo) {
     const coName = co.name || 'Ken McCoy Consulting';
     const coTagline = co.tagline || 'Sourcing · Recruiting · Onboarding';
     const coSac = co.sacCode || '998516';
-    
+
+    // Load logo
+    const logoPath = path.join(__dirname, '..', 'public', 'images', 'logo-kmc.jpg');
+    let logoBuffer = null;
+    try { if (fs.existsSync(logoPath)) logoBuffer = fs.readFileSync(logoPath); } catch (e) { /* no logo */ }
+
     const fmt = (n) => n ? new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : '0.00';
     const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
@@ -194,7 +199,7 @@ async function generateInvoiceWord(invoice, companyInfo) {
                 }),
 
                 new Paragraph({
-                    text: 'Sourcing & Onboarding Charges', // Updated text
+                    text: `Sourcing, Recruiting and Onboarding Charges For: ${invoice.chargesFor || ''}`,
                     bold: true,
                     color: '003087',
                     size: 20,
@@ -211,10 +216,10 @@ async function generateInvoiceWord(invoice, companyInfo) {
                                 createTableCell('Candidate Name', { bold: true, shading: { fill: '003087' } }),
                                 createTableCell('Designation / Level', { bold: true, shading: { fill: '003087' } }),
                                 createTableCell('Joining Date', { bold: true, shading: { fill: '003087' } }),
-                                createTableCell('Salary', { bold: true, shading: { fill: '003087' }, align: AlignmentType.RIGHT })
+                                createTableCell('Chargeable Salary', { bold: true, shading: { fill: '003087' }, align: AlignmentType.RIGHT })
                             ]
                         }),
-                        ...(candidates.length === 0 
+                        ...(candidates.length === 0
                             ? [new TableRow({
                                 children: [createTableCell('—'), createTableCell(''), createTableCell(''), createTableCell(''), createTableCell('')]
                             })]
@@ -257,6 +262,14 @@ async function generateInvoiceWord(invoice, companyInfo) {
                                         new Paragraph({ text: '', spacing: { after: 600 } }), // SPACE FOR SIGNATURE/STAMP
                                         new Paragraph({ text: `For ${coName}`, bold: true, size: 16 }),
                                         new Paragraph({ text: '(Authorised Signatory & Seal)', size: 14, color: '666666' }),
+                                        // Logo bottom-right of signature cell
+                                        ...(logoBuffer ? [
+                                            new Paragraph({
+                                                alignment: AlignmentType.RIGHT,
+                                                children: [new ImageRun({ data: logoBuffer, transformation: { width: 100, height: 36 }, type: 'jpg' })],
+                                                spacing: { before: 100 }
+                                            })
+                                        ] : [])
                                     ]
                                 }),
                                 new TableCell({
@@ -296,7 +309,7 @@ async function generateInvoiceWord(invoice, companyInfo) {
                 default: new Paragraph({
                     border: { bottom: { color: 'FF9900', size: 24, style: BorderStyle.SINGLE } },
                     children: [
-                        new TextRun({ text: 'Thank you for your business!', size: 16, color: '666666', italic: true }),
+                        new TextRun({ text: 'Thank you for your business! For queries: Accounts – Tel: 91-22-42959123', size: 16, color: '666666', italic: true }),
                     ],
                     alignment: AlignmentType.CENTER,
                     spacing: { before: 200 },

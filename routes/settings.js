@@ -288,6 +288,24 @@ router.put('/backup', async (req, res) => {
 });
 
 // Trigger manual backup
+// Update invoice defaults (superadmin only)
+router.put('/invoice-defaults', async (req, res) => {
+    if (req.user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Super Admin access required.' });
+    }
+    try {
+        const { defaultSignatoryName, defaultSealUrl, defaultTemplate } = req.body;
+        let settings = await Settings.findOne({ user: req.user._id });
+        if (!settings) settings = new Settings({ user: req.user._id });
+        const normalizedTemplate = ['image1', 'image2'].includes(defaultTemplate) ? defaultTemplate : 'image1';
+        settings.invoiceDefaults = { defaultSignatoryName, defaultSealUrl, defaultTemplate: normalizedTemplate };
+        await settings.save();
+        res.json({ message: 'Invoice defaults saved.', invoiceDefaults: settings.invoiceDefaults });
+    } catch (error) {
+        res.status(500).json({ message: 'Error saving invoice defaults', error: error.message });
+    }
+});
+
 router.post('/backup/trigger', async (req, res) => {
     try {
         let settings = await Settings.findOne({ user: req.user._id });
