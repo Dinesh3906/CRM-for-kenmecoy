@@ -853,7 +853,7 @@ body {
 .table-container {
   background: #fff;
   border-radius: var(--radius-xl);
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-md);
 }
@@ -5634,4 +5634,4 @@ h2,
     font-size: 18px;
   }
 }
- 
+
