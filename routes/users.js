@@ -77,7 +77,7 @@ router.get('/for-assignment', async (req, res) => {
         const query = { isActive: true };
         
         const users = await User.find(query)
-            .select('_id fullName email isActive')
+            .select('_id fullName email role department managerId isActive')
             .sort({ fullName: 1 });
         res.json(users);
     } catch (error) {

@@ -419,12 +419,21 @@ router.patch('/:id/complete', async (req, res) => {
             module: 'tasks',
             targetId: task._id,
             targetModel: 'Task',
-            description: `Completed task: ${task.title}`
+            description: `Completed task: ${task.action}`
         }).save();
 
+        // Notify hierarchy about task completion
+        const { notifyTaskHierarchy } = require('../utils/notifications');
+        await notifyTaskHierarchy(
+            task,
+            'task_completed',
+            `Task completed: ${task.action}`,
+            req.user._id
+        );
+
         const updatedTask = await Task.findById(task._id)
-            .populate('lead', 'name company')
-            .populate('assignedToUser', 'username email fullName');
+            .populate('lead', 'companyName contactPerson')
+            .populate('assignedTo', 'username email fullName');
 
         res.json(updatedTask);
     } catch (error) {
@@ -483,7 +492,7 @@ router.delete('/:id', async (req, res) => {
             module: 'tasks',
             targetId: task._id,
             targetModel: 'Task',
-            description: `Deleted task: ${task.title}`
+            description: `Deleted task: ${task.action}`
         }).save();
 
         res.json({ message: 'Task deleted successfully' });

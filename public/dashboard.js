@@ -4099,14 +4099,15 @@ async function markNotificationRead(notificationId, type, refId) {
         
         // Navigation logic based on notification type
         if (type && type.startsWith('invoice_') && refId) {
-            if (typeof switchMenu === 'function') switchMenu('invoices');
-            if (typeof viewInvoice === 'function') viewInvoice(refId);
-        } else if (type && type.startsWith('task_') && refId) {
-            if (typeof switchMenu === 'function') switchMenu('tasks');
-            if (typeof viewTaskModal === 'function') viewTaskModal(refId);
-        } else if (type && (type === 'status_change' || type === 'assignment' || type === 'reassignment' || type === 'comment') && refId) {
-            if (typeof switchMenu === 'function') switchMenu('dashboard');
-            if (typeof viewLead === 'function') viewLead(refId);
+            showSection('invoices');
+            // Small delay to let section data load before opening modal
+            setTimeout(() => { if (typeof viewInvoice === 'function') viewInvoice(refId); }, 300);
+        } else if (type && (type.startsWith('task_') || type === 'comment') && refId) {
+            showSection('tasks');
+            setTimeout(() => { if (typeof viewTask === 'function') viewTask(refId); }, 300);
+        } else if (type && (type === 'status_change' || type === 'assignment' || type === 'reassignment') && refId) {
+            showSection('leads');
+            setTimeout(() => { if (typeof viewLead === 'function') viewLead(refId); }, 300);
         }
         
         // Hide panel when an item is clicked

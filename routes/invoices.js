@@ -858,6 +858,7 @@ async function generateInvoicePDF(invoice, res, options = {}) {
     // ──────── HEADER (aligned to margins) ────────
     const hH = 95;
     doc.rect(ML, 0, CW, hH).fill(BLUE);
+    doc.rect(ML, 0, CW, hH).strokeColor(BLK).lineWidth(0.5).stroke();
     doc.fontSize(22).fillColor('white').font('Helvetica-Bold'); T('Ken McCoy Consulting', ML + 10, 18);
     doc.fontSize(9.5).fillColor('white').font('Helvetica');
     T('B201, Hind Saurashtra Ind.Est, Marol,', ML + 10, 45);
