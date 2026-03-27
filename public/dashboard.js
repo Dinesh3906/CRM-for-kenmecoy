@@ -4039,9 +4039,15 @@ function renderNotifications(notifications) {
     list.innerHTML = notifications.map(notif => {
         const icon = getNotificationIcon(notif.type);
         const timeAgo = formatTimeAgo(new Date(notif.createdAt));
+        
+        // Find reference ID based on what the notification is for
+        let refId = '';
+        if (notif.invoice) refId = typeof notif.invoice === 'object' ? notif.invoice._id : notif.invoice;
+        else if (notif.lead) refId = typeof notif.lead === 'object' ? notif.lead._id : notif.lead;
+        else if (notif.task) refId = typeof notif.task === 'object' ? notif.task._id : notif.task;
 
         return `
-            <div class="notification-item ${!notif.read ? 'unread' : ''}" onclick="markNotificationRead('${notif._id}')">
+            <div class="notification-item ${!notif.read ? 'unread' : ''}" onclick="markNotificationRead('${notif._id}', '${notif.type}', '${refId}')" style="cursor: pointer;">
                 <div class="notification-content">
                     <div class="notification-icon ${notif.type}">
                         <ion-icon name="${icon}" class="icon-md"></ion-icon>
@@ -4058,14 +4064,17 @@ function renderNotifications(notifications) {
 
 function getNotificationIcon(type) {
     const icons = {
-        'status_change': 'fa-exchange-alt',
-        'assignment': 'fa-user-plus',
-        'reassignment': 'fa-user-edit',
-        'comment': 'fa-comment',
-        'task_created': 'fa-tasks',
-        'task_completed': 'fa-check-circle'
+        'status_change': 'swap-horizontal-outline',
+        'assignment': 'person-add-outline',
+        'reassignment': 'person-outline',
+        'comment': 'chatbubble-outline',
+        'task_created': 'list-outline',
+        'task_completed': 'checkmark-circle-outline',
+        'invoice_created': 'document-text-outline',
+        'invoice_approved': 'checkmark-done-circle-outline',
+        'invoice_rejected': 'close-circle-outline'
     };
-    return icons[type] || 'fa-bell';
+    return icons[type] || 'notifications-outline';
 }
 
 function formatTimeAgo(date) {
@@ -4079,7 +4088,7 @@ function formatTimeAgo(date) {
     return date.toLocaleDateString();
 }
 
-async function markNotificationRead(notificationId) {
+async function markNotificationRead(notificationId, type, refId) {
     try {
         await fetch(`${API_BASE}/notifications/${notificationId}/read`, {
             method: 'PUT',
@@ -4087,6 +4096,23 @@ async function markNotificationRead(notificationId) {
         });
 
         loadNotifications();
+        
+        // Navigation logic based on notification type
+        if (type && type.startsWith('invoice_') && refId) {
+            if (typeof switchMenu === 'function') switchMenu('invoices');
+            if (typeof viewInvoice === 'function') viewInvoice(refId);
+        } else if (type && type.startsWith('task_') && refId) {
+            if (typeof switchMenu === 'function') switchMenu('tasks');
+            if (typeof viewTaskModal === 'function') viewTaskModal(refId);
+        } else if (type && (type === 'status_change' || type === 'assignment' || type === 'reassignment' || type === 'comment') && refId) {
+            if (typeof switchMenu === 'function') switchMenu('dashboard');
+            if (typeof viewLead === 'function') viewLead(refId);
+        }
+        
+        // Hide panel when an item is clicked
+        const panel = document.getElementById('notificationsPanel');
+        if (panel) panel.style.display = 'none';
+
     } catch (error) {
         console.error('Error marking notification as read:', error);
     }
@@ -4147,7 +4173,7 @@ function startNotificationPolling() {
 document.addEventListener('click', function (event) {
     if (notificationsPanel && notificationsPanel.style.display === 'block') {
         const isClickInside = notificationsPanel.contains(event.target) ||
-            event.target.closest('.header-btn');
+            event.target.closest('.header-btn') || event.target.closest('.top-nav-btn');
 
         if (!isClickInside) {
             notificationsPanel.style.display = 'none';
@@ -5182,6 +5208,10 @@ async function loadInvoices() {
                     <button class="btn btn-sm btn-primary" onclick="openEditInvoiceModal('${inv._id}')" title="Edit" style="padding:3px 5px;margin:0 1px;"><ion-icon name="create-outline" style="font-size:14px;"></ion-icon></button>
                     <button class="btn btn-sm btn-success" onclick="downloadInvoicePDF('${inv._id}', '${inv.invoiceNumber}')" title="PDF" style="padding:3px 5px;margin:0 1px;"><ion-icon name="download-outline" style="font-size:14px;"></ion-icon></button>
                     <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${inv._id}')" title="Delete" style="padding:3px 5px;margin:0 1px;"><ion-icon name="trash-outline" style="font-size:14px;"></ion-icon></button>
+                    ${(inv.approvalStatus === 'pending' && currentUser?.role === 'superadmin') ? `
+                    <button class="btn btn-sm btn-success" onclick="approveInvoice('${inv._id}')" title="Approve" style="padding:3px 5px;margin:0 1px;"><ion-icon name="checkmark-outline" style="font-size:14px;"></ion-icon></button>
+                    <button class="btn btn-sm btn-danger" onclick="rejectInvoice('${inv._id}')" title="Reject" style="padding:3px 5px;margin:0 1px;"><ion-icon name="close-outline" style="font-size:14px;"></ion-icon></button>
+                    ` : ''}
                 </td>
             </tr>`;
         }).join('');
@@ -5263,6 +5293,7 @@ async function openEditInvoiceModal(id) {
         setVal('invoiceEditId', inv._id);
         setVal('invNo', inv.invoiceNumber);
         setVal('invDate', inv.invoiceDate ? new Date(inv.invoiceDate).toISOString().split('T')[0] : '');
+        setVal('invDueDate', inv.dueDate ? new Date(inv.dueDate).toISOString().split('T')[0] : '');
         setVal('invDeptCode', inv.deptCode || 'NA');
         setVal('invPoId', inv.poId);
         setVal('invServiceType', inv.serviceType || 'sourcing');
@@ -5323,6 +5354,7 @@ async function handleSaveInvoice(e) {
         serviceType: document.getElementById('invServiceType').value,
         chargeableSalary: parseFloat(document.getElementById('invSalary').value),
         rate: parseFloat(document.getElementById('invRate').value),
+        dueDate: document.getElementById('invDueDate').value,
         candidates,
         paymentStatus: document.getElementById('invPayStatus').value,
         receivableAmount: parseFloat(document.getElementById('invReceivable').value) || 0,
@@ -5361,6 +5393,43 @@ async function deleteInvoice(id) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
         showNotification('Invoice deleted.', 'success');
+        loadInvoices();
+        loadInvoiceStats();
+    } catch (e) {
+        showNotification('Error: ' + e.message, 'error');
+    }
+}
+
+async function approveInvoice(id) {
+    if (!confirm('Approve this invoice?')) return;
+    try {
+        const res = await fetch(`${API_BASE}/invoices/${id}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ note: '' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        showNotification('Invoice approved.', 'success');
+        loadInvoices();
+        loadInvoiceStats();
+    } catch (e) {
+        showNotification('Error: ' + e.message, 'error');
+    }
+}
+
+async function rejectInvoice(id) {
+    const note = prompt('Enter a reason for rejection (optional):');
+    if (note === null) return; // Cancelled
+    try {
+        const res = await fetch(`${API_BASE}/invoices/${id}/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ note })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        showNotification('Invoice rejected.', 'success');
         loadInvoices();
         loadInvoiceStats();
     } catch (e) {
